@@ -54,25 +54,12 @@ Interactive Swagger docs: **http://localhost:8000/docs**
 
 Simply open **`frontend/index.html`** in any modern browser.
 
-> ⚠️ Because the frontend makes API calls to `localhost:8000`, open it via a local server or directly from file. Chrome may block local file fetches — use Firefox or serve via Python:
+> Because the frontend makes API calls to `localhost:8000`, open it via a local server or directly from file. Chrome may block local file fetches — use Firefox or serve via Python:
 > ```bash
 > cd frontend
 > python -m http.server 3000
 > # then open http://localhost:3000
 > ```
-
----
-
-## Demo Credentials
-
-| Role | Email | Password | Profile |
-|---|---|---|---|
-| Admin | admin@efficio.edu | admin123 | — |
-| Professor | reyes@efficio.edu | prof123 | — |
-| Professor | santos@efficio.edu | prof123 | — |
-| Student | juan@efficio.edu | student123 | BSCS · Year 2 |
-| Student | maria@efficio.edu | student123 | BSCS · Year 2 |
-| Student | pedro@efficio.edu | student123 | BSIT · Year 1 |
 
 ---
 

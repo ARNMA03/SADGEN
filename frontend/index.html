@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Efficio — Automated Block Enrollment Portal</title>
+  <meta name="description" content="Efficio is a streamlined automated block enrollment system for students, professors, and administrators. Fast, role-based, and built for clarity." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React + Babel via CDN (no build step needed) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- App modules (order matters) -->
+  <script type="text/babel" src="js/api.js" data-type="module"></script>
+  <script type="text/babel" src="js/AuthContext.js" data-type="module"></script>
+  <script type="text/babel" src="js/components/Navbar.js" data-type="module"></script>
+  <script type="text/babel" src="js/components/SectionCard.js" data-type="module"></script>
+  <script type="text/babel" src="js/components/SectionModal.js" data-type="module"></script>
+  <script type="text/babel" src="js/components/RosterGrid.js" data-type="module"></script>
+  <script type="text/babel" src="js/pages/Login.js" data-type="module"></script>
+  <script type="text/babel" src="js/pages/admin/AdminDashboard.js" data-type="module"></script>
+  <script type="text/babel" src="js/pages/student/StudentDashboard.js" data-type="module"></script>
+  <script type="text/babel" src="js/pages/professor/ProfessorDashboard.js" data-type="module"></script>
+  <script type="text/babel" src="js/App.js" data-type="module"></script>
+  <script type="text/babel" src="js/main.js" data-type="module"></script>
+</body>
+</html>

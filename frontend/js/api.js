@@ -2,7 +2,7 @@
 //  api.js — Axios-like fetch wrapper
 // ═══════════════════════════════════════════════
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = ""; // Empty for same-origin deployment
 
 window.api = {
   _token: null,

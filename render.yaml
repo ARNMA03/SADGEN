@@ -1,0 +1,20 @@
+services:
+  # The Backend + Frontend Service
+  - type: web
+    name: efficio-enrollment
+    runtime: python
+    # We tell Render how to install and start the app
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python seed.py && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: efficio-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+
+# The Database Service
+databases:
+  - name: efficio-db
+    plan: free # Use the free tier

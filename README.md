@@ -13,9 +13,24 @@
 | PostgreSQL | 14+ | [postgresql.org](https://www.postgresql.org) |
 | Node.js | _Not required_ | Frontend runs via CDN |
 
+## 🚀 Deployment (Docker)
+
+The system is now fully containerized. To deploy the entire stack (Database, Backend, and Frontend):
+
+1. **Install Docker** and **Docker Compose**.
+2. Run the following command in the root directory:
+   ```bash
+   docker-compose up --build
+   ```
+3. The system will be available at:
+   - **Frontend & API:** [http://localhost:8000](http://localhost:8000)
+   - **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+
+The database will be automatically created and seeded on the first run.
+
 ---
 
-## 1. Database Setup (PostgreSQL)
+## 🛠 Manual Setup (Local Development)
 
 Open **pgAdmin** or `psql` and run:
 

@@ -12,8 +12,8 @@ function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("efficio_user");
-    const token  = sessionStorage.getItem("efficio_token");
+    const stored = sessionStorage.getItem("sadgen_user");
+    const token  = sessionStorage.getItem("sadgen_token");
     if (stored && token) {
       window.api.setToken(token);
       setUser(JSON.parse(stored));
@@ -24,7 +24,7 @@ function AuthProvider({ children }) {
   const login = async (email, password) => {
     const data = await window.api.login(email, password);
     window.api.setToken(data.access_token);
-    sessionStorage.setItem("efficio_token", data.access_token);
+    sessionStorage.setItem("sadgen_token", data.access_token);
     const profile = {
       user_id:    data.user_id,
       name:       data.name,
@@ -32,15 +32,15 @@ function AuthProvider({ children }) {
       program:    data.program,
       year_level: data.year_level,
     };
-    sessionStorage.setItem("efficio_user", JSON.stringify(profile));
+    sessionStorage.setItem("sadgen_user", JSON.stringify(profile));
     setUser(profile);
     return profile;
   };
 
   const logout = () => {
     window.api.clearToken();
-    sessionStorage.removeItem("efficio_token");
-    sessionStorage.removeItem("efficio_user");
+    sessionStorage.removeItem("sadgen_token");
+    sessionStorage.removeItem("sadgen_user");
     setUser(null);
   };
 

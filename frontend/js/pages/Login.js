@@ -12,11 +12,11 @@ function Login() {
   const [loading, setLoading]   = useSt_Login(false);
 
   const DEMOS = [
-    { label: "Admin",       email: "admin@efficio.edu",  password: "admin123"    },
-    { label: "Prof. Reyes", email: "reyes@efficio.edu",  password: "prof123"     },
-    { label: "Juan (BSCS-2)",email:"juan@efficio.edu",   password: "student123"  },
-    { label: "Maria (BSCS-2)",email:"maria@efficio.edu", password: "student123"  },
-    { label: "Pedro (BSIT-1)",email:"pedro@efficio.edu", password: "student123"  },
+    { label: "Admin",       email: "admin@sadgen.edu",  password: "admin123"    },
+    { label: "Prof. Reyes", email: "reyes@sadgen.edu",  password: "prof123"     },
+    { label: "Juan (BSCS-2)",email:"juan@sadgen.edu",   password: "student123"  },
+    { label: "Maria (BSCS-2)",email:"maria@sadgen.edu", password: "student123"  },
+    { label: "Pedro (BSIT-1)",email:"pedro@sadgen.edu", password: "student123"  },
   ];
 
   const handleSubmit = async (e) => {
@@ -37,7 +37,7 @@ function Login() {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <div className="login-logo">⚡ Efficio</div>
+        <div className="login-logo">⚡ Sadgen</div>
         <p className="login-tagline">Automated Block Enrollment Portal · HCI2 Prototype</p>
 
         {error && (
@@ -53,7 +53,7 @@ function Login() {
               id="login-email"
               className="input"
               type="email"
-              placeholder="you@efficio.edu"
+              placeholder="you@sadgen.edu"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required

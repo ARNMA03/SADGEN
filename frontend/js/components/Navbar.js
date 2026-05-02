@@ -16,7 +16,7 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <span className="navbar-brand">⚡ Efficio</span>
+      <span className="navbar-brand">⚡ Sadgen</span>
       <div className="navbar-user">
         <span className={`badge ${roleColors[user.role] || "badge-blue"}`}>{user.role}</span>
         <span style={{color:"var(--text-secondary)", fontSize:"0.875rem", display:"flex", flexDirection:"column", alignItems:"flex-end", lineHeight:1.3}}>

@@ -1,23 +1,32 @@
 @echo off
 echo ============================================
-echo  Efficio Enrollment Portal — Backend Setup
+echo  Sadgen Enrollment Portal — Backend
 echo ============================================
 
 cd /d "%~dp0"
 
-echo [1/4] Creating Python virtual environment...
-python -m venv venv
+if not exist "venv" (
+    echo [ERROR] Virtual environment not found. Please run 'setup.bat' first.
+    pause
+    exit /b
+)
 
-echo [2/4] Activating venv and installing dependencies...
+echo [1/2] Activating environment...
 call venv\Scripts\activate.bat
-pip install -r requirements.txt
 
-echo [3/4] Seeding database...
-python seed.py
-
-echo [4/4] Starting FastAPI server...
+echo [2/2] Starting FastAPI server...
 echo.
 echo  Backend running at: http://localhost:8000
 echo  API Docs available: http://localhost:8000/docs
 echo.
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+:: Automatically open the browser
+start http://localhost:8000
+
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] Application failed to start.
+    pause
+)

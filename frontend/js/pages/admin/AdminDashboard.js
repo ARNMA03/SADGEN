@@ -2,53 +2,26 @@
 //  AdminDashboard.js — Full admin control panel
 // ═══════════════════════════════════════════════
 
-const { useState: useSt_Adm, useEffect: useEf_Adm } = React;
-
-function AdminDashboard() {
-  const [tab, setTab] = useSt_Adm("users");
-
-  return (
-    <div className="page animate-fade-in">
-      <div className="page-header">
-        <h1 className="page-title">Admin Control Panel</h1>
-        <p className="page-subtitle">Manage users, curriculum blueprints, and block sections.</p>
-      </div>
-
-      <div className="tab-nav">
-        {[
-          { key:"users",     label:"👤 Users" },
-          { key:"courses",   label:"📘 Courses" },
-          { key:"blueprint", label:"🗺 Blueprint" },
-          { key:"sections",  label:"🏫 Sections" },
-        ].map(t => (
-          <button
-            key={t.key}
-            id={`admin-tab-${t.key}`}
-            className={`tab-btn${tab===t.key?" active":""}`}
-            onClick={() => setTab(t.key)}
-          >{t.label}</button>
-        ))}
-      </div>
-
-      {tab === "users"     && <AdminUsers />}
-      {tab === "courses"   && <AdminCourses />}
-      {tab === "blueprint" && <AdminBlueprint />}
-      {tab === "sections"  && <AdminSections />}
-    </div>
-  );
-}
+const { useState, useEffect } = React;
 
 /* ── Users Tab ── */
 function AdminUsers() {
-  const [users, setUsers]       = useSt_Adm([]);
-  const [loading, setLoading]   = useSt_Adm(true);
-  const [form, setForm]         = useSt_Adm({ name:"", email:"", password:"", role:"Student", program:"", year_level:"" });
-  const [saving, setSaving]     = useSt_Adm(false);
-  const [toast, setToast]       = useSt_Adm(null);
+  const [users, setUsers]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [form, setForm]         = useState({ name:"", email:"", password:"", role:"Student", program:"", year_level:"" });
+  const [saving, setSaving]     = useState(false);
+  const [toast, setToast]       = useState(null);
 
   const showToast = (msg, type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),3500); };
-  const load = () => window.api.getUsers().then(setUsers).finally(()=>setLoading(false));
-  useEf_Adm(()=>{ load(); }, []);
+  
+  const load = () => {
+    window.api.getUsers()
+      .then(setUsers)
+      .catch(e => showToast(e.message, "error"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -79,7 +52,6 @@ function AdminUsers() {
     <div>
       {toast && <div className={`status-banner ${toast.type}`}>{toast.msg}</div>}
 
-      {/* Create User Form */}
       <div className="glass-card" style={{marginBottom:"1.5rem"}}>
         <h3 style={{marginBottom:"1rem",fontFamily:"var(--font-display)"}}>Create New Account</h3>
         <form onSubmit={handleCreate} id="create-user-form">
@@ -91,7 +63,7 @@ function AdminUsers() {
             </div>
             <div className="input-group">
               <label className="input-label">Email</label>
-              <input className="input" type="email" placeholder="user@efficio.edu" value={form.email}
+              <input className="input" type="email" placeholder="user@sadgen.edu" value={form.email}
                 onChange={e=>setForm({...form,email:e.target.value})} required />
             </div>
           </div>
@@ -130,7 +102,6 @@ function AdminUsers() {
         </form>
       </div>
 
-      {/* User List */}
       {loading ? <div style={{textAlign:"center",padding:"2rem"}}><span className="spinner"/></div> : (
         <div className="data-table-wrap">
           <table className="data-table">
@@ -159,15 +130,22 @@ function AdminUsers() {
 
 /* ── Courses Tab ── */
 function AdminCourses() {
-  const [courses, setCourses] = useSt_Adm([]);
-  const [loading, setLoading] = useSt_Adm(true);
-  const [form, setForm]       = useSt_Adm({ course_name:"", course_code:"" });
-  const [saving, setSaving]   = useSt_Adm(false);
-  const [toast, setToast]     = useSt_Adm(null);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm]       = useState({ course_name:"", course_code:"" });
+  const [saving, setSaving]   = useState(false);
+  const [toast, setToast]     = useState(null);
 
   const showToast = (m,t="success")=>{ setToast({msg:m,type:t}); setTimeout(()=>setToast(null),3500); };
-  const load = () => window.api.getCourses().then(setCourses).finally(()=>setLoading(false));
-  useEf_Adm(()=>load(),[]);
+  
+  const load = () => {
+    window.api.getCourses()
+      .then(setCourses)
+      .catch(e => showToast(e.message, "error"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault(); setSaving(true);
@@ -224,19 +202,26 @@ function AdminCourses() {
 
 /* ── Blueprint Tab ── */
 function AdminBlueprint() {
-  const [bps, setBps]         = useSt_Adm([]);
-  const [courses, setCourses] = useSt_Adm([]);
-  const [loading, setLoading] = useSt_Adm(true);
-  const [form, setForm]       = useSt_Adm({ program:"BSCS", year_level:"2", course_id:"" });
-  const [saving, setSaving]   = useSt_Adm(false);
-  const [toast, setToast]     = useSt_Adm(null);
+  const [bps, setBps]         = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm]       = useState({ program:"BSCS", year_level:"2", course_id:"" });
+  const [saving, setSaving]   = useState(false);
+  const [toast, setToast]     = useState(null);
 
   const showToast = (m,t="success")=>{ setToast({msg:m,type:t}); setTimeout(()=>setToast(null),3500); };
-  const load = async () => {
-    const [b,c] = await Promise.all([window.api.getBlueprints(), window.api.getCourses()]);
-    setBps(b); setCourses(c); setLoading(false);
+  
+  const load = () => {
+    Promise.all([window.api.getBlueprints(), window.api.getCourses()])
+      .then(([b, c]) => {
+        setBps(b);
+        setCourses(c);
+      })
+      .catch(e => showToast(e.message, "error"))
+      .finally(() => setLoading(false));
   };
-  useEf_Adm(()=>load(),[]);
+
+  useEffect(() => { load(); }, []);
 
   const handleAdd = async (e) => {
     e.preventDefault(); setSaving(true);
@@ -252,7 +237,6 @@ function AdminBlueprint() {
     catch(e){ showToast(e.message,"error"); }
   };
 
-  // Group by program+year
   const groups = {};
   bps.forEach(b => {
     const key = `${b.program} · Year ${b.year_level}`;
@@ -319,23 +303,26 @@ function AdminBlueprint() {
 
 /* ── Sections Tab ── */
 function AdminSections() {
-  const [sections, setSections]   = useSt_Adm([]);
-  const [professors, setProfessors] = useSt_Adm([]);
-  const [loading, setLoading]     = useSt_Adm(true);
-  const [form, setForm]           = useSt_Adm({ program:"BSCS", year_level:"2", section_name:"" });
-  const [saving, setSaving]       = useSt_Adm(false);
-  const [toast, setToast]         = useSt_Adm(null);
-  const [assignMap, setAssignMap] = useSt_Adm({});
+  const [sections, setSections]   = useState([]);
+  const [professors, setProfessors] = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [form, setForm]           = useState({ program:"BSCS", year_level:"2", section_name:"" });
+  const [saving, setSaving]       = useState(false);
+  const [toast, setToast]         = useState(null);
 
   const showToast = (m,t="success")=>{ setToast({msg:m,type:t}); setTimeout(()=>setToast(null),3500); };
 
-  const load = async () => {
-    const [s, u] = await Promise.all([window.api.getAllSections(), window.api.getUsers()]);
-    setSections(s);
-    setProfessors(u.filter(u=>u.role==="Professor"));
-    setLoading(false);
+  const load = () => {
+    Promise.all([window.api.getAllSections(), window.api.getUsers()])
+      .then(([s, u]) => {
+        setSections(s);
+        setProfessors(u.filter(user => user.role === "Professor"));
+      })
+      .catch(e => showToast(e.message, "error"))
+      .finally(() => setLoading(false));
   };
-  useEf_Adm(()=>load(),[]);
+
+  useEffect(() => { load(); }, []);
 
   const handleGenerate = async (e) => {
     e.preventDefault(); setSaving(true);
@@ -360,7 +347,6 @@ function AdminSections() {
     <div>
       {toast && <div className={`status-banner ${toast.type}`}>{toast.msg}</div>}
 
-      {/* Generate Section Form */}
       <div className="glass-card" style={{marginBottom:"1.5rem"}}>
         <h3 style={{marginBottom:"0.4rem",fontFamily:"var(--font-display)"}}>Generate Block Section</h3>
         <p style={{fontSize:"0.82rem",color:"var(--text-secondary)",marginBottom:"1rem"}}>
@@ -391,7 +377,6 @@ function AdminSections() {
         </form>
       </div>
 
-      {/* Section List with inline professor assign */}
       {loading ? <div style={{textAlign:"center",padding:"2rem"}}><span className="spinner"/></div> : (
         sections.length === 0
           ? <div className="empty-state"><div className="empty-state-icon">🏫</div><div className="empty-state-title">No sections yet</div></div>
@@ -430,6 +415,43 @@ function AdminSections() {
             </div>
           ))
       )}
+    </div>
+  );
+}
+
+/* ── Main Dashboard ── */
+function AdminDashboard() {
+  const [tab, setTab] = useState("users");
+
+  return (
+    <div className="page animate-fade-in">
+      <div className="page-header">
+        <h1 className="page-title">Admin Control Panel</h1>
+        <p className="page-subtitle">Manage users, curriculum blueprints, and block sections.</p>
+      </div>
+
+      <div className="tab-nav">
+        {[
+          { key:"users",     label:"👤 Users" },
+          { key:"courses",   label:"📘 Courses" },
+          { key:"blueprint", label:"🗺 Blueprint" },
+          { key:"sections",  label:"🏫 Sections" },
+        ].map(t => (
+          <button
+            key={t.key}
+            id={`admin-tab-${t.key}`}
+            className={`tab-btn${tab===t.key?" active":""}`}
+            onClick={() => setTab(t.key)}
+          >{t.label}</button>
+        ))}
+      </div>
+
+      <div className="tab-content-container">
+        {tab === "users"     && <AdminUsers key="users" />}
+        {tab === "courses"   && <AdminCourses key="courses" />}
+        {tab === "blueprint" && <AdminBlueprint key="blueprint" />}
+        {tab === "sections"  && <AdminSections key="sections" />}
+      </div>
     </div>
   );
 }

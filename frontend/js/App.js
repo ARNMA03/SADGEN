@@ -15,7 +15,7 @@ function App() {
           fontFamily:"var(--font-display)", fontSize:"2rem", fontWeight:800,
           background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",
           WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"
-        }}>⚡ Efficio</div>
+        }}>⚡ Sadgen</div>
         <span className="spinner spinner-lg" />
       </div>
     );

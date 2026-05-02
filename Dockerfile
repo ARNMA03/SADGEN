@@ -4,7 +4,7 @@ FROM python:3.10-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV DATABASE_URL=postgresql://postgres:postgres@db:5432/efficio_db
+ENV DATABASE_URL=postgresql://postgres:postgres@db:5432/sadgen_db
 
 # Set working directory
 WORKDIR /app

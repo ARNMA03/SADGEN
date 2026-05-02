@@ -2,12 +2,12 @@
 Seed the database with demo data for all three roles.
 
 Credentials:
-  Admin   → admin@efficio.edu       / admin123
-  Prof 1  → reyes@efficio.edu       / prof123
-  Prof 2  → santos@efficio.edu      / prof123
-  Student → juan@efficio.edu        / student123  (BSCS Year 2)
-  Student → maria@efficio.edu       / student123  (BSCS Year 2)
-  Student → pedro@efficio.edu       / student123  (BSIT Year 1)
+  Admin   → admin@sadgen.edu       / admin123
+  Prof 1  → reyes@sadgen.edu       / prof123
+  Prof 2  → santos@sadgen.edu      / prof123
+  Student → juan@sadgen.edu        / student123  (BSCS Year 2)
+  Student → maria@sadgen.edu       / student123  (BSCS Year 2)
+  Student → pedro@sadgen.edu       / student123  (BSIT Year 1)
 """
 
 from database import SessionLocal, engine
@@ -23,19 +23,19 @@ def seed():
         return
 
     # ── Users ─────────────────────────────────────────────
-    admin = models.User(name="System Admin", email="admin@efficio.edu",
+    admin = models.User(name="System Admin", email="admin@sadgen.edu",
                         password_hash=hash_password("admin123"), role=models.RoleEnum.admin)
-    prof1 = models.User(name="Prof. Ana Reyes", email="reyes@efficio.edu",
+    prof1 = models.User(name="Prof. Ana Reyes", email="reyes@sadgen.edu",
                         password_hash=hash_password("prof123"), role=models.RoleEnum.professor)
-    prof2 = models.User(name="Prof. Ben Santos", email="santos@efficio.edu",
+    prof2 = models.User(name="Prof. Ben Santos", email="santos@sadgen.edu",
                         password_hash=hash_password("prof123"), role=models.RoleEnum.professor)
-    s1 = models.User(name="Juan dela Cruz", email="juan@efficio.edu",
+    s1 = models.User(name="Juan dela Cruz", email="juan@sadgen.edu",
                      password_hash=hash_password("student123"), role=models.RoleEnum.student,
                      program="BSCS", year_level=2)
-    s2 = models.User(name="Maria Garcia", email="maria@efficio.edu",
+    s2 = models.User(name="Maria Garcia", email="maria@sadgen.edu",
                      password_hash=hash_password("student123"), role=models.RoleEnum.student,
                      program="BSCS", year_level=2)
-    s3 = models.User(name="Pedro Reyes", email="pedro@efficio.edu",
+    s3 = models.User(name="Pedro Reyes", email="pedro@sadgen.edu",
                      password_hash=hash_password("student123"), role=models.RoleEnum.student,
                      program="BSIT", year_level=1)
 
@@ -114,12 +114,12 @@ def seed():
     db.commit()
     print("✅ Database seeded successfully!")
     print("\nDemo credentials:")
-    print("  Admin:     admin@efficio.edu / admin123")
-    print("  Prof 1:    reyes@efficio.edu / prof123")
-    print("  Prof 2:    santos@efficio.edu / prof123")
-    print("  Student 1: juan@efficio.edu / student123  (BSCS Yr2)")
-    print("  Student 2: maria@efficio.edu / student123  (BSCS Yr2)")
-    print("  Student 3: pedro@efficio.edu / student123  (BSIT Yr1)")
+    print("  Admin:     admin@sadgen.edu / admin123")
+    print("  Prof 1:    reyes@sadgen.edu / prof123")
+    print("  Prof 2:    santos@sadgen.edu / prof123")
+    print("  Student 1: juan@sadgen.edu / student123  (BSCS Yr2)")
+    print("  Student 2: maria@sadgen.edu / student123  (BSCS Yr2)")
+    print("  Student 3: pedro@sadgen.edu / student123  (BSIT Yr1)")
 
 if __name__ == "__main__":
     seed()

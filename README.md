@@ -1,4 +1,4 @@
-# Efficio Enrollment Portal
+# Sadgen Enrollment Portal
 
 > **HCI2 Prototype** — Automated Block Enrollment System
 > Stack: PostgreSQL · FastAPI · React (CDN, no build step)
@@ -32,36 +32,47 @@ The database will be automatically created and seeded on the first run.
 
 ## 🛠 Manual Setup (Local Development)
 
-Open **pgAdmin** or `psql` and run:
-
-```sql
-CREATE DATABASE efficio_db;
-```
-
-Default connection used: `postgresql://postgres:postgres@localhost:5432/efficio_db`
-
-To use different credentials, edit `backend/config.py` or create `backend/.env`:
-```env
-DATABASE_URL=postgresql://YOUR_USER:YOUR_PASS@localhost:5432/efficio_db
-```
-
----
-
-## 2. Start the Backend
-
-Double-click **`backend/start.bat`** (Windows), or run manually:
+### 1. Initial Setup
+To set up the project on a new Windows machine, navigate to the `backend` folder and run the setup script. This will create a virtual environment, upgrade pip, and install all dependencies automatically.
 
 ```bash
 cd backend
-python -m venv venv
-venv\Scripts\activate       # Windows
-pip install -r requirements.txt
-python seed.py              # Seeds demo data
-uvicorn main:app --reload --port 8000
+setup.bat
 ```
+
+### 2. Start the Backend
+Once setup is complete, you can start the FastAPI server using the start script:
+
+```bash
+cd backend
+start.bat
+```
+
+> **Note:** The first time you run the backend locally, you may want to seed the database with demo data. After activating your environment, run:
+> `python seed.py`
 
 API will be live at: **http://localhost:8000**  
 Interactive Swagger docs: **http://localhost:8000/docs**
+
+---
+
+## 🌐 Deployment (Render)
+
+This project is optimized for deployment on **Render**.
+
+### Project Structure
+The backend is now self-contained for easier deployment:
+- `backend/main.py`: Entry point
+- `backend/routers/`: API route logic
+- `backend/requirements.txt`: Python dependencies
+
+### Render Configuration
+1. **Build Command:** `pip install -r backend/requirements.txt`
+2. **Start Command:** `cd backend && python seed.py && uvicorn main:app --host 0.0.0.0 --port $PORT`
+3. **Environment Variables:**
+   - `PYTHON_VERSION`: `3.12.3` (Required for pre-built wheel compatibility)
+   - `CARGO_HOME`: `/opt/render/project/src/.cargo` (Writable path for Rust builds)
+   - `DATABASE_URL`: Your Render PostgreSQL connection string.
 
 ---
 

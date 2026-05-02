@@ -21,7 +21,7 @@ window.api = {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const msg = data.detail || "An error occurred";
+      const msg = data.detail || `Error ${res.status}: ${res.statusText || "An error occurred"}`;
       throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
     }
     return data;

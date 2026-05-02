@@ -10,7 +10,7 @@ import os
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Efficio Enrollment Portal API",
+    title="Sadgen Enrollment Portal API",
     description="Automated Block Enrollment System — HCI2 Prototype",
     version="1.0.0",
 )
@@ -31,7 +31,7 @@ app.include_router(professor.router)
 
 @app.get("/api/health", tags=["Health"])
 def root():
-    return {"status": "ok", "app": "Efficio Enrollment Portal", "version": "1.0.0"}
+    return {"status": "ok", "app": "Sadgen Enrollment Portal", "version": "1.0.0"}
 
 # Serve Frontend
 # Make sure the frontend directory exists relative to backend

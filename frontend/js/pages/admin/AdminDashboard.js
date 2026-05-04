@@ -165,6 +165,7 @@ function AdminUsers() {
   const [saving, setSaving]     = useState(false);
   const [toast, setToast]       = useState(null);
   const [roleFilter, setRoleFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [editUser, setEditUser] = useState(null);
 
   const showToast = (msg, type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),3500); };
@@ -187,6 +188,13 @@ function AdminUsers() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    // Email Prefix Lockdown: Reject spaces and special characters
+    const prefixRegex = /^[a-zA-Z0-9._-]+$/;
+    if (!prefixRegex.test(form.email_prefix)) {
+        showToast("Invalid email prefix. Use only letters, numbers, dots, and hyphens. No spaces or special characters.", "error");
+        return;
+    }
+
     if (form.email_prefix.includes("@")) {
         showToast("Username should not contain '@'. The domain is automatically added.", "error");
         return;
@@ -195,7 +203,7 @@ function AdminUsers() {
     try {
       const body = {
         name: form.name, 
-        email: `${form.email_prefix}@sadgen.edu.ph`, 
+        email: `${form.email_prefix.toLowerCase()}@sadgen.edu.ph`, 
         password: form.password, 
         role: form.role,
         program: form.role === "Student" ? form.program : null,
@@ -217,7 +225,13 @@ function AdminUsers() {
 
   const roleBadge = { Admin:"badge-violet", Student:"badge-blue", Professor:"badge-amber" };
 
-  const filteredUsers = roleFilter === "All" ? users : users.filter(u => u.role === roleFilter);
+  const filteredUsers = users.filter(u => {
+    const matchesRole = roleFilter === "All" || u.role === roleFilter;
+    const matchesSearch = !searchQuery || 
+                          u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          u.email.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesRole && matchesSearch;
+  });
 
   return (
     <div className="animate-fade-in">
@@ -233,7 +247,7 @@ function AdminUsers() {
                 onChange={e=>setForm({...form,name:e.target.value})} required />
             </div>
             <div className="input-group">
-              <label className="input-label">Email Address</label>
+              <label className="input-label">Email Address (Prefix)</label>
               <div style={{display:"flex", alignItems:"center"}}>
                 <input 
                   className="input" 
@@ -241,7 +255,7 @@ function AdminUsers() {
                   placeholder="e.g. j.delacruz" 
                   value={form.email_prefix}
                   onChange={e => {
-                    const val = e.target.value.split("@")[0]; // Auto-strip anything after @
+                    const val = e.target.value.split("@")[0].replace(/\s/g, ''); // Auto-strip anything after @ and spaces
                     setForm({...form, email_prefix: val});
                   }} 
                   required 
@@ -309,13 +323,24 @@ function AdminUsers() {
         </form>
       </div>
 
-      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem"}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem", gap:"1rem", flexWrap:"wrap"}}>
         <h3 style={{fontFamily:"var(--font-display)"}}>User Directory</h3>
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium" style={{color:"var(--text-secondary)"}}>Filter by Role:</label>
-          <select className="select" style={{width:"150px", padding:"0.4rem"}} value={roleFilter} onChange={e=>setRoleFilter(e.target.value)}>
-            <option>All</option><option>Admin</option><option>Student</option><option>Professor</option>
-          </select>
+        <div style={{display:"flex", gap:"0.75rem", alignItems:"center", flex:1, justifyContent:"flex-end"}}>
+          <div className="input-group" style={{width:"250px"}}>
+            <input 
+                className="input" 
+                placeholder="Search by name or email…" 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{padding:"0.4rem 0.8rem", fontSize:"0.85rem"}}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium" style={{color:"var(--text-secondary)", whiteSpace:"nowrap"}}>Role Filter:</label>
+            <select className="select" style={{width:"130px", padding:"0.4rem", fontSize:"0.85rem"}} value={roleFilter} onChange={e=>setRoleFilter(e.target.value)}>
+                <option>All</option><option>Admin</option><option>Student</option><option>Professor</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -374,6 +399,7 @@ function AdminCourses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm]       = useState({ course_name:"", course_code:"" });
+  const [searchQuery, setSearchQuery] = useState("");
   const [saving, setSaving]   = useState(false);
   const [toast, setToast]     = useState(null);
   const [editCourse, setEditCourse] = useState(null);
@@ -399,7 +425,7 @@ function AdminCourses() {
     try {
       await window.api.createCourse({
         ...form,
-        course_code: form.course_code.toUpperCase()
+        course_code: form.course_code.toUpperCase().trim()
       });
       showToast("Course created.");
       setForm({course_name:"",course_code:""});
@@ -412,6 +438,12 @@ function AdminCourses() {
     try { await window.api.deleteCourse(id); showToast("Course removed."); load(); }
     catch(e) { showToast(e.message, "error"); }
   }
+
+  const filteredCourses = courses.filter(c => 
+    !searchQuery || 
+    c.course_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    c.course_code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="animate-fade-in">
@@ -426,9 +458,8 @@ function AdminCourses() {
                 onChange={e=>setForm({...form,course_name:e.target.value})} required />
             </div>
             <div className="input-group">
-              <label className="input-label">Course Code</label>
+              <label className="input-label">Course Code (Auto-Uppercase)</label>
               <input className="input" placeholder="e.g. HCI2" value={form.course_code}
-                style={{textTransform:"uppercase"}}
                 onChange={e=>setForm({...form,course_code:e.target.value.toUpperCase()})} required />
             </div>
           </div>
@@ -438,7 +469,18 @@ function AdminCourses() {
         </form>
       </div>
 
-      <h3 style={{marginBottom:"1rem",fontFamily:"var(--font-display)"}}>Available Courses</h3>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem", gap:"1rem"}}>
+        <h3 style={{fontFamily:"var(--font-display)"}}>Available Courses</h3>
+        <div className="input-group" style={{width:"300px"}}>
+            <input 
+                className="input" 
+                placeholder="Search courses or codes…" 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{padding:"0.4rem 0.8rem", fontSize:"0.85rem"}}
+            />
+        </div>
+      </div>
 
       {loading ? <div style={{textAlign:"center",padding:"2rem"}}><span className="spinner"/></div> : (
         <div className="data-table-wrap" style={{display:"flex", flexDirection:"column"}}>
@@ -525,11 +567,7 @@ function AdminBlueprint() {
     }
     setSaving(true);
     try {
-      await window.api.addBlueprint({ 
-        program: form.program.toUpperCase(), 
-        year_level: parseInt(form.year_level), 
-        course_id: parseInt(form.course_id) 
-      });
+      await window.api.addBlueprint({ program:form.program, year_level:parseInt(form.year_level), course_id:parseInt(form.course_id) });
       showToast("Added to blueprint.");
       setForm({...form, course_id:"", course_search:""});
       load();
@@ -570,9 +608,8 @@ function AdminBlueprint() {
         <form onSubmit={handleAdd} id="add-blueprint-form">
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr auto",gap:"0.75rem",alignItems:"flex-end",flexWrap:"wrap"}}>
             <div className="input-group">
-              <label className="input-label">Program</label>
+              <label className="input-label">Program (Auto-Uppercase)</label>
               <input className="input" placeholder="BSCS" value={form.program}
-                style={{textTransform:"uppercase"}}
                 onChange={e=>setForm({...form,program:e.target.value.toUpperCase()})} required />
             </div>
             <div className="input-group">
@@ -582,7 +619,7 @@ function AdminBlueprint() {
               </select>
             </div>
             <div className="input-group">
-              <label className="input-label">Course</label>
+              <label className="input-label">Course (Smart Enter)</label>
               <div style={{position:"relative"}}>
                 <input 
                   type="text"
@@ -594,8 +631,8 @@ function AdminBlueprint() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                         if (!form.course_id) {
-                            e.preventDefault();
                             if (filteredCourses.length > 0) {
+                                e.preventDefault();
                                 const top = filteredCourses[0];
                                 setForm({...form, course_id: top.id, course_search: `${top.course_code} - ${top.course_name}`});
                                 setShowDropdown(false);
@@ -616,18 +653,20 @@ function AdminBlueprint() {
                                     background:"none", border:"none", color:"var(--text-muted)", cursor:"pointer", fontSize:"1.2rem"}}>&times;</button>
                 )}
                 {showDropdown && !form.course_id && (
-                    <div className="glass-card" style={{position:"absolute", top:"100%", left:0, right:0, zIndex:100, marginTop:"0.25rem", maxHeight:"200px", overflowY:"auto", padding:"0.5rem", boxShadow:"0 10px 25px rgba(0,0,0,0.5)"}}>
+                    <div className="course-search-dropdown">
                         {filteredCourses.length === 0 ? (
-                            <div style={{padding:"0.6rem", color:"var(--text-muted)", textAlign:"center", fontSize:"0.8rem"}}>No matching courses</div>
+                            <div style={{padding:"1rem", color:"var(--text-muted)", textAlign:"center", fontSize:"0.85rem"}}>
+                                No matching courses found.
+                            </div>
                         ) : (
                             filteredCourses.map(c => (
                                 <div key={c.id} className="dropdown-item" 
-                                     style={{padding:"0.6rem", borderRadius:"4px", cursor:"pointer", transition:"background 0.2s"}}
                                      onClick={() => {
                                         setForm({...form, course_id: c.id, course_search: `${c.course_code} - ${c.course_name}`});
                                         setShowDropdown(false);
                                      }}>
-                                    <span style={{fontWeight:600}}>{c.course_code}</span> — {c.course_name}
+                                    <span style={{fontWeight:700, fontSize:"0.9rem"}}>{c.course_code}</span>
+                                    <span style={{fontSize:"0.8rem", opacity:0.8}}>{c.course_name}</span>
                                 </div>
                             ))
                         )}
@@ -647,21 +686,18 @@ function AdminBlueprint() {
           ? <div className="empty-state"><div className="empty-state-icon">🗺</div><div className="empty-state-title">No blueprints defined</div></div>
           : Object.entries(groups).map(([grp, items]) => (
             <div key={grp} style={{marginBottom:"1.5rem"}}>
-              <div className="glass-card" style={{padding:0, overflow:"hidden"}}>
-                <div style={{padding:"1rem 1.5rem", background:"rgba(255,255,255,0.03)", borderBottom:"1px solid var(--border-glass)", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                  <h4 style={{fontFamily:"var(--font-display)", color:"var(--accent-blue)"}}>{grp}</h4>
-                  <span className="badge badge-blue">{items.length} subjects</span>
-                </div>
-                <div style={{padding:"1rem"}}>
-                  <div style={{display:"flex", flexWrap:"wrap", gap:"0.75rem"}}>
-                    {items.map(b => (
-                      <div key={b.id} className="badge badge-violet" style={{padding:"0.5rem 0.75rem", display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.9rem"}}>
-                        {b.course.course_name} <span style={{opacity:0.6}}>({b.course.course_code})</span>
-                        <button onClick={() => handleDelete(b.id)} style={{background:"none", border:"none", color:"#fff", cursor:"pointer", padding:"0 2px", fontSize:"1.1rem"}}>&times;</button>
-                      </div>
-                    ))}
+              <h3 style={{fontFamily:"var(--font-display)",fontSize:"0.85rem",color:"var(--text-secondary)",
+                          textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"0.6rem"}}>{grp}</h3>
+              <div style={{display:"flex", flexDirection:"column", gap:"0.4rem"}}>
+                {items.map(b=>(
+                  <div key={b.id} className="section-course-row">
+                    <div>
+                      <span style={{fontWeight:500}}>{b.course.course_name}</span>
+                      <span className="badge badge-blue" style={{marginLeft:"0.5rem"}}>{b.course.course_code}</span>
+                    </div>
+                    <button className="btn btn-danger btn-sm" onClick={()=>handleDelete(b.id)}>Remove</button>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           ))
@@ -676,9 +712,10 @@ function AdminSections() {
   const [professors, setProfessors] = useState([]);
   const [blueprints, setBlueprints] = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [form, setForm]           = useState({ section_name:"", program:"", year_level:"1", slot_limit:40 });
+  const [form, setForm]           = useState({ program:"", year_level:"2", slot_limit:40 });
   const [saving, setSaving]       = useState(false);
   const [toast, setToast]         = useState(null);
+  const [expandedSection, setExpandedSection] = useState(null);
 
   const showToast = (m,t="success")=>{ setToast({msg:m,type:t}); setTimeout(()=>setToast(null),3500); };
 
@@ -688,6 +725,7 @@ function AdminSections() {
         setSections(s);
         setProfessors(u.filter(user => user.role === "Professor"));
         setBlueprints(b);
+        // Default program to first available if not set
         const programs = [...new Set(b.map(bp => bp.program))];
         if (programs.length > 0 && !form.program) setForm(prev => ({...prev, program: programs[0]}));
       })
@@ -697,24 +735,23 @@ function AdminSections() {
 
   useEffect(() => { load(); }, []);
 
+  const programs = [...new Set(blueprints.map(bp => bp.program))];
+
   const handleGenerate = async (e) => {
     e.preventDefault(); 
     if (!form.program) { showToast("Please select a program.", "error"); return; }
     setSaving(true);
     try {
-      await window.api.generateSection({ 
-        ...form,
-        year_level: parseInt(form.year_level),
-        slot_limit: parseInt(form.slot_limit)
-      });
+      await window.api.generateSection({ program:form.program, year_level:parseInt(form.year_level), slot_limit:parseInt(form.slot_limit) });
       showToast(`Section generated from blueprint.`);
       load();
     } catch(e){ showToast(e.message,"error"); } finally { setSaving(false); }
   };
 
   const handleAssign = async (scId, profId) => {
+    if (!profId) return;
     try {
-      await window.api.assignProfessor({ section_course_id:parseInt(scId), professor_id: profId ? parseInt(profId) : null });
+      await window.api.assignProfessor({ section_course_id:parseInt(scId), professor_id:parseInt(profId) });
       showToast("Professor assigned.");
       load();
     } catch(e){ showToast(e.message,"error"); }
@@ -736,26 +773,22 @@ function AdminSections() {
           Automatically populates courses from the Curriculum Blueprint and handles automatic naming.
         </p>
         <form onSubmit={handleGenerate} id="generate-section-form">
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))",gap:"0.75rem",alignItems:"flex-end"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:"0.75rem",alignItems:"flex-end"}}>
             <div className="input-group">
-              <label className="input-label">Section Name</label>
-              <input className="input" placeholder="e.g. BSCS-2A" value={form.section_name}
-                onChange={e=>setForm({...form,section_name:e.target.value})} required />
-            </div>
-            <div className="input-group">
-              <label className="input-label">Program</label>
+              <label className="input-label">Program (from Blueprints)</label>
               <select className="select" value={form.program} onChange={e=>setForm({...form,program:e.target.value})} required>
-                {[...new Set(blueprints.map(b => b.program))].map(p => <option key={p} value={p}>{p}</option>)}
+                <option value="">Select program…</option>
+                {programs.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div className="input-group">
               <label className="input-label">Year</label>
               <select className="select" value={form.year_level} onChange={e=>setForm({...form,year_level:e.target.value})}>
-                {[1,2,3,4].map(y=><option key={y} value={y}>{y}</option>)}
+                {[1,2,3,4].map(y=><option key={y}>{y}</option>)}
               </select>
             </div>
             <div className="input-group">
-              <label className="input-label">Slots</label>
+              <label className="input-label">Slot Limit</label>
               <input className="input" type="number" min="1" value={form.slot_limit}
                 onChange={e=>setForm({...form,slot_limit:e.target.value})} required />
             </div>
@@ -771,7 +804,7 @@ function AdminSections() {
           ? <div className="empty-state"><div className="empty-state-icon">🏫</div><div className="empty-state-title">No sections yet</div></div>
           : <div className="section-grid">
               {sections.map(sec=>(
-                <div key={sec.id} className="glass-card animate-slide-up">
+                <div key={sec.id} className="glass-card">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.85rem"}}>
                     <div>
                         <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.2rem"}}>{sec.section_name}</h3>
@@ -790,25 +823,41 @@ function AdminSections() {
                     </span>
                   </div>
 
-                  <div style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
-                    {(sec.section_courses||[]).map(sc=>(
-                    <div key={sc.id} style={{padding:"0.6rem", background:"rgba(255,255,255,0.03)", borderRadius:"8px", border:"1px solid var(--border-glass)"}}>
-                        <div style={{display:"flex", justifyContent:"space-between", marginBottom:"0.4rem"}}>
-                        <span style={{fontWeight:600,fontSize:"0.8rem"}}>{sc.course.course_code}</span>
-                        <span style={{fontSize:"0.75rem", color:"var(--text-muted)"}}>{sc.course.course_name}</span>
+                  <button 
+                    className={`btn btn-sm w-full ${expandedSection === sec.id ? "btn-primary" : "btn-ghost"}`} 
+                    style={{marginBottom:"0.5rem", transition:"all 0.3s ease"}} 
+                    onClick={() => setExpandedSection(expandedSection === sec.id ? null : sec.id)}
+                  >
+                    {expandedSection === sec.id ? "▴ Hide Course Roster" : "▾ Manage Course Assignments"}
+                  </button>
+
+                  {expandedSection === sec.id && (
+                    <div className="animate-slide-up" style={{display:"flex",flexDirection:"column",gap:"0.6rem", marginTop:"0.5rem", borderTop:"1px solid var(--border-glass)", paddingTop:"1rem"}}>
+                        <p style={{fontSize:"0.75rem", color:"var(--text-accent)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:"0.25rem"}}>Course Assignments</p>
+                        {(sec.section_courses||[]).map(sc=>(
+                        <div key={sc.id} style={{padding:"0.75rem", background:"rgba(255,255,255,0.03)", borderRadius:"10px", border:"1px solid var(--border-glass)", transition:"background 0.2s"}}>
+                            <div style={{display:"flex", justifyContent:"space-between", marginBottom:"0.5rem", alignItems:"flex-start"}}>
+                                <div style={{display:"flex", flexDirection:"column"}}>
+                                    <span style={{fontWeight:700,fontSize:"0.85rem", color:"var(--text-primary)"}}>{sc.course.course_code}</span>
+                                    <span style={{fontSize:"0.75rem", color:"var(--text-secondary)", lineHeight:1.2}}>{sc.course.course_name}</span>
+                                </div>
+                            </div>
+                            <div className="input-group">
+                                <label className="input-label" style={{fontSize:"0.65rem"}}>Assign Instructor</label>
+                                <select
+                                    className="select"
+                                    style={{padding:"0.35rem 0.6rem",fontSize:"0.8rem", height:"32px"}}
+                                    value={sc.professor?.id||""}
+                                    onChange={e=>handleAssign(sc.id, e.target.value)}
+                                >
+                                    <option value="">— Unassigned —</option>
+                                    {professors.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
                         </div>
-                        <select
-                            className="select"
-                            style={{padding:"0.3rem 0.6rem",fontSize:"0.75rem"}}
-                            value={sc.professor?.id||""}
-                            onChange={e=>handleAssign(sc.id, e.target.value)}
-                        >
-                            <option value="">— Assign professor —</option>
-                            {professors.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
+                        ))}
                     </div>
-                    ))}
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -819,14 +868,14 @@ function AdminSections() {
 
 /* ── Main Dashboard ── */
 function AdminDashboard() {
-  const [tab, setTab] = useState(sessionStorage.getItem("admin_tab") || "welcome");
+  const [tab, setTab] = useState(sessionStorage.getItem("sadgen_admin_tab") || "welcome");
 
   useEffect(() => {
-    const handleTabChange = (e) => {
-        const newTab = e.detail;
-        setTab(newTab);
-        sessionStorage.setItem("admin_tab", newTab);
-    };
+    sessionStorage.setItem("sadgen_admin_tab", tab);
+  }, [tab]);
+
+  useEffect(() => {
+    const handleTabChange = (e) => setTab(e.detail);
     window.addEventListener('changeAdminTab', handleTabChange);
     return () => window.removeEventListener('changeAdminTab', handleTabChange);
   }, []);

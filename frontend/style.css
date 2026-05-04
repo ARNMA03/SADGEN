@@ -422,6 +422,64 @@ a:hover {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.8rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color var(--t-fast);
+  z-index: 2;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-accent);
+}
+
+.course-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  margin-top: 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(0,0,0,0.4);
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  animation: slide-up 0.2s var(--ease-out);
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-glass-hover);
+  color: var(--accent-blue);
+}
+
 .select option {
   background: var(--bg-elevated);
   color: var(--text-primary);

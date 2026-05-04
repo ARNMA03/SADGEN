@@ -135,6 +135,15 @@ def add_blueprint(payload: schemas.BlueprintCreate, db: Session = Depends(get_db
         raise HTTPException(status_code=400, detail="Blueprint entry already exists")
     bp = models.CurriculumBlueprint(**payload.model_dump())
     db.add(bp)
+    
+    # Sync: Add this course to all existing sections of this program/year
+    sections = db.query(models.Section).filter_by(program=payload.program, year_level=payload.year_level).all()
+    for sec in sections:
+        # Check if already exists to avoid unique constraint error
+        exists = db.query(models.SectionCourse).filter_by(section_id=sec.id, course_id=payload.course_id).first()
+        if not exists:
+            db.add(models.SectionCourse(section_id=sec.id, course_id=payload.course_id))
+
     db.commit()
     db.refresh(bp)
     return bp
@@ -144,6 +153,16 @@ def delete_blueprint(blueprint_id: int, db: Session = Depends(get_db), _=Depends
     bp = db.query(models.CurriculumBlueprint).filter(models.CurriculumBlueprint.id == blueprint_id).first()
     if not bp:
         raise HTTPException(status_code=404, detail="Blueprint not found")
+    
+    # Sync: Remove this course from all sections of this program/year
+    # We join with Section to filter by program and year_level
+    db.query(models.SectionCourse).filter(
+        models.SectionCourse.section_id.in_(
+            db.query(models.Section.id).filter_by(program=bp.program, year_level=bp.year_level)
+        ),
+        models.SectionCourse.course_id == bp.course_id
+    ).delete(synchronize_session=False)
+
     db.delete(bp)
     db.commit()
 

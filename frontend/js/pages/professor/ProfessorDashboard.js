@@ -12,12 +12,12 @@ function ProfessorDashboard() {
   const [loadPage, setLoadPage]       = useSt_Prof(true);
   const [loadRoster, setLoadRoster]   = useSt_Prof(false);
   const [load, setLoad]               = useSt_Prof([]);
-  const [view, setView]               = useSt_Prof(sessionStorage.getItem("prof_view") || "sections"); // "sections" or "loads"
+  const [view, setView]               = useSt_Prof(sessionStorage.getItem("sadgen_prof_view") || "sections"); // "sections" or "loads"
+  const [searchQuery, setSearchQuery] = useSt_Prof("");
 
-  const setViewPersist = (v) => {
-    setView(v);
-    sessionStorage.setItem("prof_view", v);
-  };
+  useEf_Prof(() => {
+    sessionStorage.setItem("sadgen_prof_view", view);
+  }, [view]);
 
   useEf_Prof(() => {
     Promise.all([window.api.getProfSections(), window.api.getProfLoad()])
@@ -89,33 +89,43 @@ function ProfessorDashboard() {
 
       {/* View Toggle */}
       <div className="tab-nav">
-        <button className={`tab-btn ${view === "sections" ? "active" : ""}`} onClick={() => setViewPersist("sections")}>
+        <button className={`tab-btn ${view === "sections" ? "active" : ""}`} onClick={() => setView("sections")}>
             Assigned Sections
         </button>
-        <button className={`tab-btn ${view === "loads" ? "active" : ""}`} onClick={() => setViewPersist("loads")}>
+        <button className={`tab-btn ${view === "loads" ? "active" : ""}`} onClick={() => setView("loads")}>
             Course Loads
         </button>
       </div>
 
       {view === "sections" ? (
         <div className="animate-fade-in">
-            {/* Consistent Header for Sections */}
-            <h2 style={{fontFamily:"var(--font-display)",fontSize:"0.8rem",fontWeight:600,
-                        color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:"0.06em",
-                        marginBottom:"2.5rem", paddingTop:"0.5rem"}}>
-                Your Sections
-            </h2>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"2rem", flexWrap:"wrap", gap:"1rem"}}>
+                <h2 style={{fontFamily:"var(--font-display)",fontSize:"0.8rem",fontWeight:600,
+                            color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:"0.06em",
+                            paddingTop:"0.5rem"}}>
+                    Your Sections
+                </h2>
+                <div className="input-group" style={{width:"300px"}}>
+                    <input 
+                        className="input" 
+                        placeholder="Search sections by name…" 
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        style={{padding:"0.5rem 1rem", fontSize:"0.85rem"}}
+                    />
+                </div>
+            </div>
 
             <div style={{display:"grid", gridTemplateColumns: selectedSec ? "350px 1fr" : "1fr", gap:"2rem", alignItems:"start"}}>
                 {/* Section List */}
-                {sections.length === 0 ? (
+                {sections.filter(s => !searchQuery || s.section_name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
                     <div className="empty-state" style={{padding:"2rem"}}>
                         <div className="empty-state-icon">📂</div>
-                        <div className="empty-state-title">No sections assigned</div>
+                        <div className="empty-state-title">No matching sections</div>
                     </div>
                 ) : (
                     <div style={{display:"flex",flexDirection:"column",gap:"1rem", maxHeight:"650px", overflowY:"auto", padding:"0.5rem", paddingRight:"1rem"}}>
-                    {sections.map(sec => {
+                    {sections.filter(s => !searchQuery || s.section_name.toLowerCase().includes(searchQuery.toLowerCase())).map(sec => {
                         const courses = getCoursesForSection(sec.id);
                         return (
                             <button

@@ -8,6 +8,7 @@ function Login() {
   const { login } = window.useAuth();
   const [email, setEmail]       = useSt_Login("");
   const [password, setPassword] = useSt_Login("");
+  const [showPassword, setShowPassword] = useSt_Login(false);
   const [error, setError]       = useSt_Login("");
   const [loading, setLoading]   = useSt_Login(false);
 
@@ -62,16 +63,26 @@ function Login() {
           </div>
           <div className="input-group">
             <label className="input-label" htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              className="input"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <div className="password-input-wrapper">
+                <input
+                    id="login-password"
+                    className="input"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    style={{paddingRight: "3.5rem"}}
+                    autoComplete="current-password"
+                />
+                <button 
+                    type="button" 
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                >
+                    {showPassword ? "Hide" : "Show"}
+                </button>
+            </div>
           </div>
           <button
             id="login-submit"

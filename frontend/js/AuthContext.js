@@ -41,6 +41,8 @@ function AuthProvider({ children }) {
     window.api.clearToken();
     sessionStorage.removeItem("sadgen_token");
     sessionStorage.removeItem("sadgen_user");
+    sessionStorage.removeItem("sadgen_admin_tab");
+    sessionStorage.removeItem("sadgen_prof_view");
     setUser(null);
   };
 

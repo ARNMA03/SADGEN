@@ -31,23 +31,41 @@ function SectionCard({ section, onPreview, isEnrolled, onEnroll, enrolling }) {
           <span className="badge badge-violet">Year {section.year_level}</span>
         </div>
 
-        <div style={{marginTop:"0.85rem", display:"flex", flexDirection:"column", gap:"0.3rem"}}>
-          <div style={{fontSize:"0.82rem", color:"var(--text-secondary)"}}>
-            📚 <strong style={{color:"var(--text-primary)"}}>{courseCount}</strong> subjects bundled
+        <div style={{marginTop:"1.25rem", display:"flex", flexDirection:"column", gap:"0.75rem"}}>
+          <div style={{display:"flex", flexDirection:"column", gap:"0.35rem"}}>
+            <div style={{display:"flex", justifyContent:"space-between", fontSize:"0.75rem", fontWeight:600, color:"var(--text-secondary)"}}>
+                <span>👥 Slot Capacity</span>
+                <span style={{color: section.enrolled_count >= section.slot_limit ? "var(--accent-rose)" : "var(--text-accent)"}}>
+                    {section.enrolled_count} / {section.slot_limit}
+                </span>
+            </div>
+            <div style={{height:"6px", background:"rgba(255,255,255,0.05)", borderRadius:"10px", overflow:"hidden", border:"1px solid var(--border-glass)"}}>
+                <div style={{
+                    height:"100%", 
+                    width:`${Math.min(100, (section.enrolled_count / section.slot_limit) * 100)}%`,
+                    background: section.enrolled_count >= section.slot_limit ? "var(--accent-rose)" : "var(--gradient-primary)",
+                    boxShadow: section.enrolled_count >= section.slot_limit ? "0 0 10px rgba(244,63,94,0.4)" : "0 0 10px rgba(59,130,246,0.4)",
+                    transition: "width 0.6s cubic-bezier(0.16, 1, 0.3, 1)"
+                }} />
+            </div>
           </div>
-          <div style={{fontSize:"0.82rem", color: section.enrolled_count >= section.slot_limit ? "var(--accent-rose)" : "var(--text-secondary)"}}>
-            👥 <strong style={{color:"inherit"}}>{section.enrolled_count}</strong> / {section.slot_limit} slots filled
+
+          <div style={{fontSize:"0.82rem", color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:"0.5rem"}}>
+            📚 <span style={{color:"var(--text-primary)", fontWeight:500}}>{courseCount} subjects</span> bundled
           </div>
+          
           {profSet.size > 0 && (
-            <div style={{fontSize:"0.82rem", color:"var(--text-secondary)"}}>
-              👩‍🏫 {Array.from(profSet).slice(0,2).join(", ")}{profSet.size > 2 ? ` +${profSet.size-2}` : ""}
+            <div style={{fontSize:"0.82rem", color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:"0.5rem"}}>
+              👩‍🏫 <span style={{color:"var(--text-primary)", fontWeight:500}}>
+                {Array.from(profSet).slice(0,2).join(", ")}{profSet.size > 2 ? ` +${profSet.size-2}` : ""}
+              </span>
             </div>
           )}
         </div>
       </div>
 
-      <div className="section-card-footer">
-        <span className="section-card-count">{courseCount} courses</span>
+      <div className="section-card-footer" style={{marginTop:"1.5rem", paddingTop:"1rem", borderTop:"1px solid var(--border-glass)"}}>
+        <span className="section-card-count" style={{fontSize:"0.75rem", opacity:0.7}}>{courseCount} courses</span>
         <div style={{display:"flex", gap:"0.5rem"}}>
           <button className="btn btn-ghost btn-sm" onClick={() => onPreview(section)}>
             Preview

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from typing import List
 from database import get_db
 from auth import hash_password, require_role
@@ -7,6 +8,26 @@ import models, schemas
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 admin_only = require_role("Admin")
+
+@router.get("/stats")
+def get_admin_stats(db: Session = Depends(get_db), _=Depends(admin_only)):
+    total_slots = db.query(func.sum(models.Section.slot_limit)).scalar() or 0
+    total_enrolled = db.query(models.Enrollment).count()
+    # Count unique (program, year) combinations
+    total_blueprints = db.query(models.CurriculumBlueprint.program, models.CurriculumBlueprint.year_level).distinct().count()
+    total_courses = db.query(models.Course).count()
+    
+    capacity_percentage = 0
+    if total_slots > 0:
+        capacity_percentage = round((total_enrolled / total_slots) * 100)
+    
+    return {
+        "total_slots": total_slots,
+        "total_enrolled": total_enrolled,
+        "capacity_percentage": capacity_percentage,
+        "total_blueprints": total_blueprints,
+        "total_courses": total_courses
+    }
 
 # ─── User Management ──────────────────────────────────────────────────────────
 
@@ -39,6 +60,25 @@ def delete_user(user_id: int, db: Session = Depends(get_db), _=Depends(admin_onl
     db.delete(user)
     db.commit()
 
+@router.put("/users/{user_id}", response_model=schemas.UserOut)
+def update_user(user_id: int, payload: schemas.UserUpdate, db: Session = Depends(get_db), _=Depends(admin_only)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    data = payload.model_dump(exclude_unset=True)
+    if "password" in data and data["password"]:
+        data["password_hash"] = hash_password(data.pop("password"))
+    elif "password" in data:
+        data.pop("password")
+        
+    for key, value in data.items():
+        setattr(user, key, value)
+    
+    db.commit()
+    db.refresh(user)
+    return user
+
 # ─── Courses ──────────────────────────────────────────────────────────────────
 
 @router.get("/courses", response_model=List[schemas.CourseOut])
@@ -54,6 +94,28 @@ def create_course(payload: schemas.CourseCreate, db: Session = Depends(get_db), 
     db.commit()
     db.refresh(course)
     return course
+
+@router.put("/courses/{course_id}", response_model=schemas.CourseOut)
+def update_course(course_id: int, payload: schemas.CourseUpdate, db: Session = Depends(get_db), _=Depends(admin_only)):
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    data = payload.model_dump(exclude_unset=True)
+    for key, value in data.items():
+        setattr(course, key, value)
+    
+    db.commit()
+    db.refresh(course)
+    return course
+
+@router.delete("/courses/{course_id}", status_code=204)
+def delete_course(course_id: int, db: Session = Depends(get_db), _=Depends(admin_only)):
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    db.delete(course)
+    db.commit()
 
 # ─── Curriculum Blueprints ────────────────────────────────────────────────────
 
@@ -89,8 +151,24 @@ def delete_blueprint(blueprint_id: int, db: Session = Depends(get_db), _=Depends
 
 @router.post("/generate-section", response_model=schemas.SectionOut, status_code=201)
 def generate_section(payload: schemas.GenerateSectionRequest, db: Session = Depends(get_db), _=Depends(admin_only)):
-    if db.query(models.Section).filter(models.Section.section_name == payload.section_name).first():
-        raise HTTPException(status_code=400, detail="Section name already exists")
+    # Auto-naming logic: BSIT-3A, BSIT-3B...
+    base_name = f"{payload.program}-{payload.year_level}"
+    existing_sections = db.query(models.Section).filter(
+        models.Section.section_name.like(f"{base_name}%")
+    ).order_by(models.Section.section_name.desc()).all()
+    
+    next_letter = "A"
+    if existing_sections:
+        # Get the highest letter used so far
+        last_names = [s.section_name for s in existing_sections]
+        # Sort and get the last one
+        last_names.sort()
+        last_name = last_names[-1]
+        last_char = last_name[-1]
+        if last_char.isalpha():
+            next_letter = chr(ord(last_char) + 1)
+    
+    section_name = f"{base_name}{next_letter}"
 
     blueprints = db.query(models.CurriculumBlueprint).filter_by(
         program=payload.program, year_level=payload.year_level
@@ -99,9 +177,10 @@ def generate_section(payload: schemas.GenerateSectionRequest, db: Session = Depe
         raise HTTPException(status_code=404, detail="No blueprint found for given program and year")
 
     section = models.Section(
-        section_name=payload.section_name,
+        section_name=section_name,
         program=payload.program,
         year_level=payload.year_level,
+        slot_limit=payload.slot_limit
     )
     db.add(section)
     db.flush()
@@ -112,11 +191,37 @@ def generate_section(payload: schemas.GenerateSectionRequest, db: Session = Depe
 
     db.commit()
     db.refresh(section)
+    section.enrolled_count = 0
     return section
+
+@router.put("/sections/{section_id}", response_model=schemas.SectionOut)
+def update_section(section_id: int, payload: schemas.SectionUpdate, db: Session = Depends(get_db), _=Depends(admin_only)):
+    section = db.query(models.Section).filter(models.Section.id == section_id).first()
+    if not section:
+        raise HTTPException(status_code=404, detail="Section not found")
+    
+    if payload.slot_limit is not None:
+        section.slot_limit = payload.slot_limit
+    
+    db.commit()
+    db.refresh(section)
+    section.enrolled_count = db.query(models.Enrollment).filter_by(section_id=section.id).count()
+    return section
+
+@router.delete("/sections/{section_id}", status_code=204)
+def delete_section(section_id: int, db: Session = Depends(get_db), _=Depends(admin_only)):
+    section = db.query(models.Section).filter(models.Section.id == section_id).first()
+    if not section:
+        raise HTTPException(status_code=404, detail="Section not found")
+    db.delete(section)
+    db.commit()
 
 @router.get("/sections", response_model=List[schemas.SectionOut])
 def list_all_sections(db: Session = Depends(get_db), _=Depends(admin_only)):
-    return db.query(models.Section).all()
+    sections = db.query(models.Section).all()
+    for s in sections:
+        s.enrolled_count = db.query(models.Enrollment).filter_by(section_id=s.id).count()
+    return sections
 
 @router.post("/assign-professor", status_code=200)
 def assign_professor(payload: schemas.AssignProfessorRequest, db: Session = Depends(get_db), _=Depends(admin_only)):

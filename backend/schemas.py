@@ -31,6 +31,14 @@ class UserCreate(BaseModel):
     program: Optional[str] = None
     year_level: Optional[int] = None
 
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    role: Optional[RoleEnum] = None
+    program: Optional[str] = None
+    year_level: Optional[int] = None
+
 class UserOut(BaseModel):
     id: int
     name: str
@@ -55,6 +63,10 @@ class CourseCreate(BaseModel):
     course_name: str
     course_code: str
 
+class CourseUpdate(BaseModel):
+    course_name: Optional[str] = None
+    course_code: Optional[str] = None
+
 # ─── Blueprints ───────────────────────────────────────────
 class BlueprintCreate(BaseModel):
     program: str
@@ -74,7 +86,7 @@ class BlueprintOut(BaseModel):
 class GenerateSectionRequest(BaseModel):
     program: str
     year_level: int
-    section_name: str  # e.g. BSCS-2A
+    slot_limit: int = 40
 
 class AssignProfessorRequest(BaseModel):
     section_course_id: int
@@ -85,6 +97,10 @@ class SectionCourseOut(BaseModel):
     id: int
     course: CourseOut
     professor: Optional[UserOut] = None
+    section_id: int
+    section_name: str
+    program: str
+    year_level: int
 
     class Config:
         from_attributes = True
@@ -94,10 +110,15 @@ class SectionOut(BaseModel):
     section_name: str
     program: str
     year_level: int
+    slot_limit: int
+    enrolled_count: int = 0
     section_courses: List[SectionCourseOut] = []
 
     class Config:
         from_attributes = True
+
+class SectionUpdate(BaseModel):
+    slot_limit: Optional[int] = None
 
 # ─── Enrollment ───────────────────────────────────────────
 class EnrollRequest(BaseModel):

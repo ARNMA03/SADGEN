@@ -18,7 +18,12 @@ function SectionCard({ section, onPreview, isEnrolled, onEnroll, enrolling }) {
           <h3 style={{fontFamily:"var(--font-display)", fontSize:"1.2rem", fontWeight:700}}>
             {section.section_name}
           </h3>
-          {isEnrolled && <span className="badge badge-green">✓ Enrolled</span>}
+          <div style={{display:"flex", gap:"0.4rem"}}>
+            {section.enrolled_count >= section.slot_limit && !isEnrolled && (
+              <span className="badge badge-rose">Full</span>
+            )}
+            {isEnrolled && <span className="badge badge-green">✓ Enrolled</span>}
+          </div>
         </div>
 
         <div className="section-card-badge-row">
@@ -29,6 +34,9 @@ function SectionCard({ section, onPreview, isEnrolled, onEnroll, enrolling }) {
         <div style={{marginTop:"0.85rem", display:"flex", flexDirection:"column", gap:"0.3rem"}}>
           <div style={{fontSize:"0.82rem", color:"var(--text-secondary)"}}>
             📚 <strong style={{color:"var(--text-primary)"}}>{courseCount}</strong> subjects bundled
+          </div>
+          <div style={{fontSize:"0.82rem", color: section.enrolled_count >= section.slot_limit ? "var(--accent-rose)" : "var(--text-secondary)"}}>
+            👥 <strong style={{color:"inherit"}}>{section.enrolled_count}</strong> / {section.slot_limit} slots filled
           </div>
           {profSet.size > 0 && (
             <div style={{fontSize:"0.82rem", color:"var(--text-secondary)"}}>
@@ -48,9 +56,9 @@ function SectionCard({ section, onPreview, isEnrolled, onEnroll, enrolling }) {
             <button
               className="btn btn-primary btn-sm"
               onClick={() => onEnroll(section.id)}
-              disabled={enrolling}
+              disabled={enrolling || section.enrolled_count >= section.slot_limit}
             >
-              {enrolling ? <span className="spinner" style={{width:14,height:14,borderWidth:2}} /> : "Enroll"}
+              {enrolling ? <span className="spinner" style={{width:14,height:14,borderWidth:2}} /> : (section.enrolled_count >= section.slot_limit ? "Full" : "Enroll")}
             </button>
           )}
         </div>

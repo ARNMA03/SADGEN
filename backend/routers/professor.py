@@ -32,7 +32,10 @@ def get_assigned_sections(
         .all()
     )
     ids = [s[0] for s in section_ids]
-    return db.query(models.Section).filter(models.Section.id.in_(ids)).all()
+    sections = db.query(models.Section).filter(models.Section.id.in_(ids)).all()
+    for s in sections:
+        s.enrolled_count = db.query(models.Enrollment).filter_by(section_id=s.id).count()
+    return sections
 
 @router.get("/roster/{section_id}", response_model=List[schemas.RosterStudent])
 def get_class_roster(

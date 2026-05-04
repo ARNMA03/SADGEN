@@ -49,6 +49,9 @@ function StudentDashboard() {
       showToast("🎉 Enrollment successful! Your study load is ready.", "success");
       await loadData();
     } catch (e) {
+      // Close the modal on error so the toast notification is clearly visible 
+      // and not blocked by the modal overlay
+      setPreviewSection(null); 
       showToast(e.message, "error");
     } finally {
       setEnrolling(false);

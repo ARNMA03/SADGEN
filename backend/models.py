@@ -26,7 +26,7 @@ class Course(Base):
     __tablename__ = "courses"
 
     id = Column(Integer, primary_key=True, index=True)
-    course_name = Column(String, nullable=False)
+    course_name = Column(String, unique=True, nullable=False)
     course_code = Column(String, unique=True, nullable=False)
 
     blueprints = relationship("CurriculumBlueprint", back_populates="course")
@@ -51,6 +51,7 @@ class Section(Base):
     section_name = Column(String, unique=True, nullable=False)  # e.g. BSCS-2A
     program = Column(String, nullable=False)
     year_level = Column(Integer, nullable=False)
+    slot_limit = Column(Integer, nullable=False, default=40)
 
     section_courses = relationship("SectionCourse", back_populates="section")
     enrollments = relationship("Enrollment", back_populates="section")
@@ -66,6 +67,13 @@ class SectionCourse(Base):
     section = relationship("Section", back_populates="section_courses")
     course = relationship("Course", back_populates="section_courses")
     professor = relationship("User", back_populates="section_courses", foreign_keys=[professor_id])
+
+    @property
+    def section_name(self): return self.section.section_name
+    @property
+    def program(self): return self.section.program
+    @property
+    def year_level(self): return self.section.year_level
 
     __table_args__ = (UniqueConstraint("section_id", "course_id", name="uq_section_course"),)
 

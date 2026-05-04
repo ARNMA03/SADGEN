@@ -19,7 +19,11 @@ def get_sections_for_student(
     if current_user.role == models.RoleEnum.student:
         if current_user.program != program or current_user.year_level != year:
             raise HTTPException(status_code=403, detail="Cannot view sections outside your program/year")
-    return db.query(models.Section).filter_by(program=program, year_level=year).all()
+    
+    sections = db.query(models.Section).filter_by(program=program, year_level=year).all()
+    for s in sections:
+        s.enrolled_count = db.query(models.Enrollment).filter_by(section_id=s.id).count()
+    return sections
 
 @router.post("/enroll", status_code=201)
 def enroll(
@@ -34,6 +38,11 @@ def enroll(
     # Validate section matches student's program and year
     if section.program != current_user.program or section.year_level != current_user.year_level:
         raise HTTPException(status_code=403, detail="Section does not match your program or year level")
+
+    # Check slot limit
+    enrolled_count = db.query(models.Enrollment).filter_by(section_id=section.id).count()
+    if enrolled_count >= section.slot_limit:
+        raise HTTPException(status_code=400, detail="This section is already full")
 
     # Check if already enrolled in ANY section (one enrollment per student)
     existing = db.query(models.Enrollment).filter(models.Enrollment.student_id == current_user.id).first()

@@ -13,10 +13,16 @@ function SectionModal({ section, onClose, onEnroll, isEnrolled, enrolling }) {
             <h2 style={{fontFamily:"var(--font-display)", fontSize:"1.35rem"}}>
               {section.section_name}
             </h2>
-            <div style={{display:"flex", gap:"0.5rem", marginTop:"0.5rem"}}>
+          <div style={{display:"flex", gap:"0.5rem", marginTop:"0.5rem", alignItems:"center"}}>
               <span className="badge badge-blue">{section.program}</span>
               <span className="badge badge-violet">Year {section.year_level}</span>
+              {section.enrolled_count >= section.slot_limit && !isEnrolled && (
+                <span className="badge badge-rose">Full</span>
+              )}
               {isEnrolled && <span className="badge badge-green">✓ Enrolled</span>}
+              <span style={{fontSize:"0.75rem", color:"var(--text-muted)", marginLeft:"0.5rem"}}>
+                ({section.enrolled_count} / {section.slot_limit} slots)
+              </span>
             </div>
           </div>
           <button className="modal-close" onClick={onClose}>✕</button>
@@ -52,14 +58,14 @@ function SectionModal({ section, onClose, onEnroll, isEnrolled, enrolling }) {
           <button className="btn btn-ghost" onClick={onClose}>Close</button>
           {!isEnrolled && onEnroll && (
             <button
-              className="btn btn-success"
+              className={section.enrolled_count >= section.slot_limit ? "btn btn-ghost" : "btn btn-success"}
               onClick={() => onEnroll(section.id)}
-              disabled={enrolling}
+              disabled={enrolling || section.enrolled_count >= section.slot_limit}
               id={`enroll-btn-${section.id}`}
             >
               {enrolling
                 ? <><span className="spinner" style={{width:16,height:16,borderWidth:2}} /> Enrolling…</>
-                : "✓ Confirm Enrollment"
+                : (section.enrolled_count >= section.slot_limit ? "Section Full" : "✓ Confirm Enrollment")
               }
             </button>
           )}

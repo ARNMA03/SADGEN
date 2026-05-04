@@ -2,9 +2,10 @@ from pydantic_settings import BaseSettings
 from pydantic import field_validator
 import os
 
+
 class Settings(BaseSettings):
     # This field will capture the environment variable 'DATABASE_URL'
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/sadgen_db"
+    DATABASE_URL: str = "postgresql://sadgen_db_user:NuifYMPomHp67T4ZCARk6SGSvJdmXz5q@dpg-d7nothrrjlhs73al7f20-a.singapore-postgres.render.com/sadgen_db"
 
     @field_validator("DATABASE_URL", mode="after")
     @classmethod
@@ -16,11 +17,14 @@ class Settings(BaseSettings):
             return v.replace("postgres://", "postgresql+pg8000://", 1)
         return v
 
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "sadgen-super-secret-key-hci2-prototype-2024")
+    SECRET_KEY: str = os.getenv(
+        "SECRET_KEY", "sadgen-super-secret-key-hci2-prototype-2024"
+    )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()

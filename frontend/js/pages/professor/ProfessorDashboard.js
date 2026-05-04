@@ -12,7 +12,12 @@ function ProfessorDashboard() {
   const [loadPage, setLoadPage]       = useSt_Prof(true);
   const [loadRoster, setLoadRoster]   = useSt_Prof(false);
   const [load, setLoad]               = useSt_Prof([]);
-  const [view, setView]               = useSt_Prof("sections"); // "sections" or "loads"
+  const [view, setView]               = useSt_Prof(sessionStorage.getItem("prof_view") || "sections"); // "sections" or "loads"
+
+  const setViewPersist = (v) => {
+    setView(v);
+    sessionStorage.setItem("prof_view", v);
+  };
 
   useEf_Prof(() => {
     Promise.all([window.api.getProfSections(), window.api.getProfLoad()])
@@ -84,10 +89,10 @@ function ProfessorDashboard() {
 
       {/* View Toggle */}
       <div className="tab-nav">
-        <button className={`tab-btn ${view === "sections" ? "active" : ""}`} onClick={() => setView("sections")}>
+        <button className={`tab-btn ${view === "sections" ? "active" : ""}`} onClick={() => setViewPersist("sections")}>
             Assigned Sections
         </button>
-        <button className={`tab-btn ${view === "loads" ? "active" : ""}`} onClick={() => setView("loads")}>
+        <button className={`tab-btn ${view === "loads" ? "active" : ""}`} onClick={() => setViewPersist("loads")}>
             Course Loads
         </button>
       </div>

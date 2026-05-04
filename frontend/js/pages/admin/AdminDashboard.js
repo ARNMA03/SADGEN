@@ -397,7 +397,10 @@ function AdminCourses() {
     }
     setSaving(true);
     try {
-      await window.api.createCourse(form);
+      await window.api.createCourse({
+        ...form,
+        course_code: form.course_code.toUpperCase()
+      });
       showToast("Course created.");
       setForm({course_name:"",course_code:""});
       load();
@@ -425,7 +428,8 @@ function AdminCourses() {
             <div className="input-group">
               <label className="input-label">Course Code</label>
               <input className="input" placeholder="e.g. HCI2" value={form.course_code}
-                onChange={e=>setForm({...form,course_code:e.target.value})} required />
+                style={{textTransform:"uppercase"}}
+                onChange={e=>setForm({...form,course_code:e.target.value.toUpperCase()})} required />
             </div>
           </div>
           <button type="submit" className="btn btn-primary" disabled={saving} id="create-course-btn">
@@ -521,7 +525,11 @@ function AdminBlueprint() {
     }
     setSaving(true);
     try {
-      await window.api.addBlueprint({ program:form.program, year_level:parseInt(form.year_level), course_id:parseInt(form.course_id) });
+      await window.api.addBlueprint({ 
+        program: form.program.toUpperCase(), 
+        year_level: parseInt(form.year_level), 
+        course_id: parseInt(form.course_id) 
+      });
       showToast("Added to blueprint.");
       setForm({...form, course_id:"", course_search:""});
       load();
@@ -564,7 +572,8 @@ function AdminBlueprint() {
             <div className="input-group">
               <label className="input-label">Program</label>
               <input className="input" placeholder="BSCS" value={form.program}
-                onChange={e=>setForm({...form,program:e.target.value})} required />
+                style={{textTransform:"uppercase"}}
+                onChange={e=>setForm({...form,program:e.target.value.toUpperCase()})} required />
             </div>
             <div className="input-group">
               <label className="input-label">Year</label>
@@ -638,18 +647,21 @@ function AdminBlueprint() {
           ? <div className="empty-state"><div className="empty-state-icon">🗺</div><div className="empty-state-title">No blueprints defined</div></div>
           : Object.entries(groups).map(([grp, items]) => (
             <div key={grp} style={{marginBottom:"1.5rem"}}>
-              <h3 style={{fontFamily:"var(--font-display)",fontSize:"0.85rem",color:"var(--text-secondary)",
-                          textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"0.6rem"}}>{grp}</h3>
-              <div style={{display:"flex", flexDirection:"column", gap:"0.4rem"}}>
-                {items.map(b=>(
-                  <div key={b.id} className="section-course-row">
-                    <div>
-                      <span style={{fontWeight:500}}>{b.course.course_name}</span>
-                      <span className="badge badge-blue" style={{marginLeft:"0.5rem"}}>{b.course.course_code}</span>
-                    </div>
-                    <button className="btn btn-danger btn-sm" onClick={()=>handleDelete(b.id)}>Remove</button>
+              <div className="glass-card" style={{padding:0, overflow:"hidden"}}>
+                <div style={{padding:"1rem 1.5rem", background:"rgba(255,255,255,0.03)", borderBottom:"1px solid var(--border-glass)", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                  <h4 style={{fontFamily:"var(--font-display)", color:"var(--accent-blue)"}}>{grp}</h4>
+                  <span className="badge badge-blue">{items.length} subjects</span>
+                </div>
+                <div style={{padding:"1rem"}}>
+                  <div style={{display:"flex", flexWrap:"wrap", gap:"0.75rem"}}>
+                    {items.map(b => (
+                      <div key={b.id} className="badge badge-violet" style={{padding:"0.5rem 0.75rem", display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.9rem"}}>
+                        {b.course.course_name} <span style={{opacity:0.6}}>({b.course.course_code})</span>
+                        <button onClick={() => handleDelete(b.id)} style={{background:"none", border:"none", color:"#fff", cursor:"pointer", padding:"0 2px", fontSize:"1.1rem"}}>&times;</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           ))
@@ -664,10 +676,9 @@ function AdminSections() {
   const [professors, setProfessors] = useState([]);
   const [blueprints, setBlueprints] = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [form, setForm]           = useState({ program:"", year_level:"2", slot_limit:40 });
+  const [form, setForm]           = useState({ section_name:"", program:"", year_level:"1", slot_limit:40 });
   const [saving, setSaving]       = useState(false);
   const [toast, setToast]         = useState(null);
-  const [expandedSection, setExpandedSection] = useState(null);
 
   const showToast = (m,t="success")=>{ setToast({msg:m,type:t}); setTimeout(()=>setToast(null),3500); };
 
@@ -677,7 +688,6 @@ function AdminSections() {
         setSections(s);
         setProfessors(u.filter(user => user.role === "Professor"));
         setBlueprints(b);
-        // Default program to first available if not set
         const programs = [...new Set(b.map(bp => bp.program))];
         if (programs.length > 0 && !form.program) setForm(prev => ({...prev, program: programs[0]}));
       })
@@ -687,23 +697,24 @@ function AdminSections() {
 
   useEffect(() => { load(); }, []);
 
-  const programs = [...new Set(blueprints.map(bp => bp.program))];
-
   const handleGenerate = async (e) => {
     e.preventDefault(); 
     if (!form.program) { showToast("Please select a program.", "error"); return; }
     setSaving(true);
     try {
-      await window.api.generateSection({ program:form.program, year_level:parseInt(form.year_level), slot_limit:parseInt(form.slot_limit) });
+      await window.api.generateSection({ 
+        ...form,
+        year_level: parseInt(form.year_level),
+        slot_limit: parseInt(form.slot_limit)
+      });
       showToast(`Section generated from blueprint.`);
       load();
     } catch(e){ showToast(e.message,"error"); } finally { setSaving(false); }
   };
 
   const handleAssign = async (scId, profId) => {
-    if (!profId) return;
     try {
-      await window.api.assignProfessor({ section_course_id:parseInt(scId), professor_id:parseInt(profId) });
+      await window.api.assignProfessor({ section_course_id:parseInt(scId), professor_id: profId ? parseInt(profId) : null });
       showToast("Professor assigned.");
       load();
     } catch(e){ showToast(e.message,"error"); }
@@ -725,22 +736,26 @@ function AdminSections() {
           Automatically populates courses from the Curriculum Blueprint and handles automatic naming.
         </p>
         <form onSubmit={handleGenerate} id="generate-section-form">
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:"0.75rem",alignItems:"flex-end"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))",gap:"0.75rem",alignItems:"flex-end"}}>
             <div className="input-group">
-              <label className="input-label">Program (from Blueprints)</label>
+              <label className="input-label">Section Name</label>
+              <input className="input" placeholder="e.g. BSCS-2A" value={form.section_name}
+                onChange={e=>setForm({...form,section_name:e.target.value})} required />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Program</label>
               <select className="select" value={form.program} onChange={e=>setForm({...form,program:e.target.value})} required>
-                <option value="">Select program…</option>
-                {programs.map(p => <option key={p} value={p}>{p}</option>)}
+                {[...new Set(blueprints.map(b => b.program))].map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div className="input-group">
               <label className="input-label">Year</label>
               <select className="select" value={form.year_level} onChange={e=>setForm({...form,year_level:e.target.value})}>
-                {[1,2,3,4].map(y=><option key={y}>{y}</option>)}
+                {[1,2,3,4].map(y=><option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div className="input-group">
-              <label className="input-label">Slot Limit</label>
+              <label className="input-label">Slots</label>
               <input className="input" type="number" min="1" value={form.slot_limit}
                 onChange={e=>setForm({...form,slot_limit:e.target.value})} required />
             </div>
@@ -756,7 +771,7 @@ function AdminSections() {
           ? <div className="empty-state"><div className="empty-state-icon">🏫</div><div className="empty-state-title">No sections yet</div></div>
           : <div className="section-grid">
               {sections.map(sec=>(
-                <div key={sec.id} className="glass-card">
+                <div key={sec.id} className="glass-card animate-slide-up">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.85rem"}}>
                     <div>
                         <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.2rem"}}>{sec.section_name}</h3>
@@ -775,31 +790,25 @@ function AdminSections() {
                     </span>
                   </div>
 
-                  <button className="btn btn-ghost btn-sm w-full" style={{marginBottom:"0.5rem"}} onClick={() => setExpandedSection(expandedSection === sec.id ? null : sec.id)}>
-                    {expandedSection === sec.id ? "Collapse Courses" : "Expand Courses"}
-                  </button>
-
-                  {expandedSection === sec.id && (
-                    <div className="animate-slide-up" style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
-                        {(sec.section_courses||[]).map(sc=>(
-                        <div key={sc.id} style={{padding:"0.6rem", background:"rgba(255,255,255,0.03)", borderRadius:"8px", border:"1px solid var(--border-glass)"}}>
-                            <div style={{display:"flex", justifyContent:"space-between", marginBottom:"0.4rem"}}>
-                            <span style={{fontWeight:600,fontSize:"0.8rem"}}>{sc.course.course_code}</span>
-                            <span style={{fontSize:"0.75rem", color:"var(--text-muted)"}}>{sc.course.course_name}</span>
-                            </div>
-                            <select
-                                className="select"
-                                style={{padding:"0.3rem 0.6rem",fontSize:"0.75rem"}}
-                                value={sc.professor?.id||""}
-                                onChange={e=>handleAssign(sc.id, e.target.value)}
-                            >
-                                <option value="">— Assign professor —</option>
-                                {professors.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                            </select>
+                  <div style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
+                    {(sec.section_courses||[]).map(sc=>(
+                    <div key={sc.id} style={{padding:"0.6rem", background:"rgba(255,255,255,0.03)", borderRadius:"8px", border:"1px solid var(--border-glass)"}}>
+                        <div style={{display:"flex", justifyContent:"space-between", marginBottom:"0.4rem"}}>
+                        <span style={{fontWeight:600,fontSize:"0.8rem"}}>{sc.course.course_code}</span>
+                        <span style={{fontSize:"0.75rem", color:"var(--text-muted)"}}>{sc.course.course_name}</span>
                         </div>
-                        ))}
+                        <select
+                            className="select"
+                            style={{padding:"0.3rem 0.6rem",fontSize:"0.75rem"}}
+                            value={sc.professor?.id||""}
+                            onChange={e=>handleAssign(sc.id, e.target.value)}
+                        >
+                            <option value="">— Assign professor —</option>
+                            {professors.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
                     </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -810,10 +819,14 @@ function AdminSections() {
 
 /* ── Main Dashboard ── */
 function AdminDashboard() {
-  const [tab, setTab] = useState("welcome");
+  const [tab, setTab] = useState(sessionStorage.getItem("admin_tab") || "welcome");
 
   useEffect(() => {
-    const handleTabChange = (e) => setTab(e.detail);
+    const handleTabChange = (e) => {
+        const newTab = e.detail;
+        setTab(newTab);
+        sessionStorage.setItem("admin_tab", newTab);
+    };
     window.addEventListener('changeAdminTab', handleTabChange);
     return () => window.removeEventListener('changeAdminTab', handleTabChange);
   }, []);

@@ -13,6 +13,7 @@ function StudentDashboard() {
   const [enrolling, setEnrolling]       = useSt_Stu(false);
   const [loadingPage, setLoadingPage]   = useSt_Stu(true);
   const [toast, setToast]               = useSt_Stu(null);
+  const [showWelcome, setShowWelcome]   = useSt_Stu(true);
 
   const showToast = (msg, type="success") => {
     setToast({msg, type});
@@ -84,9 +85,12 @@ function StudentDashboard() {
       </div>
 
       {/* Enrollment Status Banner */}
-      {!enrollStatus?.enrolled && (
-        <div className="status-banner info" style={{marginBottom:"2rem"}}>
-          ✅ You are <strong>Cleared to Enroll</strong>. Browse sections below and click a block to confirm.
+      {!enrollStatus?.enrolled && showWelcome && (
+        <div className="status-banner inline info" style={{marginBottom:"2rem", justifyContent:"space-between"}}>
+          <div style={{display:"flex", alignItems:"center", gap:"0.75rem"}}>
+            ✅ You are <strong>Cleared to Enroll</strong>. Browse sections below and click a block to confirm.
+          </div>
+          <button className="btn btn-ghost btn-sm" style={{border:"none", background:"transparent", padding:"0.2rem", fontSize:"1rem"}} onClick={() => setShowWelcome(false)}>&times;</button>
         </div>
       )}
 

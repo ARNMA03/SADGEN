@@ -768,6 +768,17 @@ input[type="checkbox"]:hover {
   min-width: 300px;
 }
 
+.status-banner.inline {
+  position: relative;
+  top: 0;
+  left: 0;
+  transform: none;
+  width: 100%;
+  z-index: 1;
+  margin-bottom: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
 @keyframes slideDown {
   from { transform: translate(-50%, -100%); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }

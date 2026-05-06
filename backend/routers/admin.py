@@ -228,11 +228,31 @@ def sync_blueprint_courses(program: str, year_level: int, course_ids: List[int],
 
 @router.put("/blueprints/group")
 def update_blueprint_group(old_program: str, old_year: int, new_program: str, new_year: int, db: Session = Depends(get_db), _=Depends(admin_only)):
+    # 1. Update the identity of all blueprint entries
     db.query(models.CurriculumBlueprint).filter_by(program=old_program, year_level=old_year, is_deleted=False).update({
         "program": new_program, "year_level": new_year
     }, synchronize_session=False)
+    
+    # 2. Identify sections that were matching the old identity
+    old_sections = db.query(models.Section).filter_by(program=old_program, year_level=old_year).all()
+    if old_program != new_program or old_year != new_year:
+        # Clear courses for sections that are now without their specific blueprint
+        for sec in old_sections:
+            db.query(models.SectionCourse).filter_by(section_id=sec.id).delete(synchronize_session=False)
+    
+    # 3. Identify sections matching the new identity and sync them
+    new_sections = db.query(models.Section).filter_by(program=new_program, year_level=new_year).all()
+    new_courses = db.query(models.CurriculumBlueprint).filter_by(program=new_program, year_level=new_year, is_deleted=False).all()
+    course_ids = [c.course_id for c in new_courses]
+    
+    for sec in new_sections:
+        # Re-populate section courses based on the updated blueprint
+        for cid in course_ids:
+            if not db.query(models.SectionCourse).filter_by(section_id=sec.id, course_id=cid).first():
+                db.add(models.SectionCourse(section_id=sec.id, course_id=cid))
+    
     db.commit()
-    return {"message": "Group updated"}
+    return {"message": "Group updated and sections synchronized"}
 
 @router.delete("/blueprints/group")
 def delete_blueprint_group(program: str, year_level: int, db: Session = Depends(get_db), _=Depends(admin_only)):
@@ -279,20 +299,19 @@ def generate_section(payload: schemas.GenerateSectionRequest, db: Session = Depe
         models.Section.section_name.like(f"{base_name}%")
     ).order_by(models.Section.section_name.desc()).all()
     
-    next_letter = "A"
-    if existing_sections:
-        # Get the highest letter used so far
-        last_names = [s.section_name for s in existing_sections]
-        last_names.sort()
-        last_name = last_names[-1]
-        
-        # Extract the trailing letter
-        # If base_name is "BSCS-2", last_name might be "BSCS-2A"
-        # If base_name is "BSCS", last_name might be "BSCS-A"
-        # We find where base_name ends and take the rest
-        suffix = last_name[len(base_name):]
+    # Smart Naming: Find the first available letter in alphabetical order
+    used_letters = set()
+    for s in existing_sections:
+        suffix = s.section_name[len(base_name):]
         if suffix and suffix[0].isalpha():
-            next_letter = chr(ord(suffix[0]) + 1)
+            used_letters.add(suffix[0].upper())
+    
+    next_letter = "A"
+    for char_code in range(ord('A'), ord('Z') + 1):
+        candidate = chr(char_code)
+        if candidate not in used_letters:
+            next_letter = candidate
+            break
     
     section_name = f"{base_name}{next_letter}"
 
@@ -339,12 +358,17 @@ def delete_section(section_id: int, db: Session = Depends(get_db), _=Depends(adm
     section = db.query(models.Section).filter(models.Section.id == section_id).first()
     if not section:
         raise HTTPException(status_code=404, detail="Section not found")
+    # Guard: Strictly block only if students are enrolled
+    has_enrollments = db.query(models.Enrollment).filter_by(section_id=section_id).first()
+    if has_enrollments:
+        raise HTTPException(status_code=400, detail="Cannot delete section. There are students currently enrolled. Unenroll all students first.")
+    
     try:
         db.delete(section)
         db.commit()
-    except Exception:
+    except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Cannot delete section. It likely has enrolled students or course assignments. Unenroll students first.")
+        raise HTTPException(status_code=400, detail=f"Error deleting section: {str(e)}")
 
 @router.get("/sections", response_model=List[schemas.SectionOut])
 def list_all_sections(db: Session = Depends(get_db), _=Depends(admin_only)):

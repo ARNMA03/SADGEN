@@ -119,7 +119,7 @@ function UserEditModal({ user, onClose, onSave, blueprints, showToast }) {
           <button className="modal-close" onClick={onClose}>&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="modal-body login-form" style={{ paddingTop: "1rem" }}>
-          {status && <div className={`status-banner ${status.type}`} style={{ marginBottom: "1rem" }}>{status.msg}</div>}
+          {status && <div className={`status-banner inline ${status.type}`}>{status.msg}</div>}
           <div className="input-group">
             <label className="input-label">Full Name</label>
             <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
@@ -136,7 +136,15 @@ function UserEditModal({ user, onClose, onSave, blueprints, showToast }) {
           <div className="form-row" style={{ alignItems: "flex-end" }}>
             <div className="input-group">
               <label className="input-label">Role</label>
-              <select className="select" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} disabled={isAdmin}>
+              <select className="select" value={form.role} onChange={e => {
+                const newRole = e.target.value;
+                setForm(prev => ({ 
+                  ...prev, 
+                  role: newRole,
+                  program: newRole === "Student" ? prev.program : null,
+                  year_level: newRole === "Student" ? prev.year_level : null
+                }));
+              }} disabled={isAdmin}>
                 {isAdmin ? <option>Admin</option> : null}
                 <option>Student</option>
                 <option>Professor</option>
@@ -669,7 +677,6 @@ function AdminBlueprint() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ program: "", year_level: "", course_id: "", course_search: "" });
   const [saving, setSaving] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [toast, setToast] = useState(null);
   const [editGroup, setEditGroup] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
@@ -1033,6 +1040,7 @@ function BlueprintManageModal({ group, onClose, onSave, allCourses }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!prog || !year) { setStatus({ msg: "Please set Program and Year.", type: "error" }); return; }
+    if (selectedIds.length === 0) { setStatus({ msg: "Please select at least one course for the curriculum.", type: "error" }); return; }
     
     setSaving(true);
     try {
@@ -1063,7 +1071,7 @@ function BlueprintManageModal({ group, onClose, onSave, allCourses }) {
           <button className="modal-close" onClick={onClose}>&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="modal-body">
-          {status && <div className={`status-banner ${status.type}`}>{status.msg}</div>}
+          {status && <div className={`status-banner inline ${status.type}`}>{status.msg}</div>}
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
             <div className="input-group">

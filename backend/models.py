@@ -60,7 +60,7 @@ class Section(Base):
     year_level = Column(Integer, nullable=True)
     slot_limit = Column(Integer, nullable=False, default=40)
 
-    section_courses = relationship("SectionCourse", back_populates="section")
+    section_courses = relationship("SectionCourse", back_populates="section", cascade="all, delete-orphan")
     enrollments = relationship("Enrollment", back_populates="section")
 
 class SectionCourse(Base):

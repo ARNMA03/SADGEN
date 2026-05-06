@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, Enum, Boolean, DateTime
+from datetime import datetime
 from sqlalchemy.orm import relationship
 from database import Base
 import enum
@@ -18,6 +19,8 @@ class User(Base):
     role = Column(Enum(RoleEnum), nullable=False)
     program = Column(String, nullable=True)   # e.g. BSCS
     year_level = Column(Integer, nullable=True)  # e.g. 2
+    is_deleted = Column(Boolean, default=False)
+    deleted_at = Column(DateTime, nullable=True)
 
     enrollments = relationship("Enrollment", back_populates="student", foreign_keys="Enrollment.student_id")
     section_courses = relationship("SectionCourse", back_populates="professor", foreign_keys="SectionCourse.professor_id")
@@ -28,6 +31,8 @@ class Course(Base):
     id = Column(Integer, primary_key=True, index=True)
     course_name = Column(String, unique=True, nullable=False)
     course_code = Column(String, unique=True, nullable=False)
+    is_deleted = Column(Boolean, default=False)
+    deleted_at = Column(DateTime, nullable=True)
 
     blueprints = relationship("CurriculumBlueprint", back_populates="course")
     section_courses = relationship("SectionCourse", back_populates="course")
@@ -37,8 +42,10 @@ class CurriculumBlueprint(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     program = Column(String, nullable=False)
-    year_level = Column(Integer, nullable=False)
+    year_level = Column(Integer, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
+    is_deleted = Column(Boolean, default=False)
+    deleted_at = Column(DateTime, nullable=True)
 
     course = relationship("Course", back_populates="blueprints")
 
@@ -50,7 +57,7 @@ class Section(Base):
     id = Column(Integer, primary_key=True, index=True)
     section_name = Column(String, unique=True, nullable=False)  # e.g. BSCS-2A
     program = Column(String, nullable=False)
-    year_level = Column(Integer, nullable=False)
+    year_level = Column(Integer, nullable=True)
     slot_limit = Column(Integer, nullable=False, default=40)
 
     section_courses = relationship("SectionCourse", back_populates="section")

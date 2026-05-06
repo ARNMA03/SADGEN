@@ -12,16 +12,24 @@ function Navbar() {
     Professor: "badge-amber",
   };
 
+  const [activeTab, setActiveTab] = React.useState(sessionStorage.getItem("sadgen_admin_tab") || "welcome");
   const initials = user.name.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase();
+
+  React.useEffect(() => {
+    const handleTabChange = (e) => setActiveTab(e.detail);
+    window.addEventListener('changeAdminTab', handleTabChange);
+    return () => window.removeEventListener('changeAdminTab', handleTabChange);
+  }, []);
 
   const navigateAdmin = (tab) => {
     window.dispatchEvent(new CustomEvent('changeAdminTab', { detail: tab }));
+    setActiveTab(tab);
   };
 
   return (
     <nav className="navbar">
       <div style={{display:"flex", alignItems:"center", gap:"1.5rem"}}>
-        <span className="navbar-brand" style={{cursor:"pointer"}} onClick={() => navigateAdmin("welcome")}>⚡ Sadgen</span>
+        <span className="navbar-brand" style={{cursor:"pointer"}} onClick={() => navigateAdmin("welcome")}>🎓 Sadgen</span>
         
         {user.role === "Admin" && (
           <div style={{display:"flex", gap:"0.25rem"}}>
@@ -30,8 +38,11 @@ function Navbar() {
               { key:"courses",   label:"📘 Courses" },
               { key:"blueprint", label:"🗺 Blueprint" },
               { key:"sections",  label:"🏫 Sections" },
+              { key:"trash",     label:"♻ Recycle Bin" }
             ].map(t => (
-              <button key={t.key} className="tab-btn" style={{fontSize:"0.8rem", padding:"0.4rem 0.8rem"}} 
+              <button key={t.key} 
+                className={`tab-btn ${activeTab === t.key ? "active" : ""}`}
+                style={{fontSize:"0.8rem", padding:"0.4rem 0.8rem"}} 
                 onClick={() => navigateAdmin(t.key)}>{t.label}</button>
             ))}
           </div>

@@ -4,6 +4,7 @@ from sqlalchemy import func
 from typing import List
 from database import get_db
 from auth import hash_password, require_role
+from datetime import datetime
 import models, schemas
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
@@ -14,8 +15,8 @@ def get_admin_stats(db: Session = Depends(get_db), _=Depends(admin_only)):
     total_slots = db.query(func.sum(models.Section.slot_limit)).scalar() or 0
     total_enrolled = db.query(models.Enrollment).count()
     # Count unique (program, year) combinations
-    total_blueprints = db.query(models.CurriculumBlueprint.program, models.CurriculumBlueprint.year_level).distinct().count()
-    total_courses = db.query(models.Course).count()
+    total_blueprints = db.query(models.CurriculumBlueprint.program, models.CurriculumBlueprint.year_level).filter(models.CurriculumBlueprint.is_deleted == False).distinct().count()
+    total_courses = db.query(models.Course).filter(models.Course.is_deleted == False).count()
     
     capacity_percentage = 0
     if total_slots > 0:
@@ -33,7 +34,11 @@ def get_admin_stats(db: Session = Depends(get_db), _=Depends(admin_only)):
 
 @router.get("/users", response_model=List[schemas.UserOut])
 def list_users(db: Session = Depends(get_db), _=Depends(admin_only)):
-    return db.query(models.User).all()
+    users = db.query(models.User).filter(models.User.is_deleted == False).all()
+    for u in users:
+        if u.role == models.RoleEnum.student and u.enrollments:
+            u.enrolled_section = u.enrollments[0].section.section_name
+    return users
 
 @router.post("/users", response_model=schemas.UserOut, status_code=201)
 def create_user(payload: schemas.UserCreate, db: Session = Depends(get_db), _=Depends(admin_only)):
@@ -53,20 +58,46 @@ def create_user(payload: schemas.UserCreate, db: Session = Depends(get_db), _=De
     return user
 
 @router.delete("/users/{user_id}", status_code=204)
-def delete_user(user_id: int, db: Session = Depends(get_db), _=Depends(admin_only)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
+def delete_user(user_id: int, db: Session = Depends(get_db), current_user=Depends(admin_only)):
+    user = db.query(models.User).filter(models.User.id == user_id, models.User.is_deleted == False).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    db.delete(user)
-    db.commit()
+    
+    # Guard: Dependency Check (Enrollments)
+    has_enrollments = db.query(models.Enrollment).filter_by(student_id=user_id).first()
+    if has_enrollments:
+        raise HTTPException(status_code=400, detail="Cannot remove user. Student is currently enrolled in sections. Unenroll them first.")
+    
+    # Protect Admins from being deleted via dashboard
+    if user.role == models.RoleEnum.admin:
+        raise HTTPException(status_code=403, detail="Admin accounts cannot be deleted through the portal.")
+
+    try:
+        user.is_deleted = True
+        user.deleted_at = datetime.utcnow()
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Cannot delete user.")
 
 @router.put("/users/{user_id}", response_model=schemas.UserOut)
-def update_user(user_id: int, payload: schemas.UserUpdate, db: Session = Depends(get_db), _=Depends(admin_only)):
+def update_user(user_id: int, payload: schemas.UserUpdate, db: Session = Depends(get_db), current_user=Depends(admin_only)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     data = payload.model_dump(exclude_unset=True)
+    
+    # Security: Disable ability to change any Admin account or own account to other roles
+    if "role" in data and user.role == models.RoleEnum.admin:
+        if data["role"] != models.RoleEnum.admin:
+             raise HTTPException(status_code=403, detail="Admin roles cannot be changed to other roles.")
+
+    # Action Item: Clear program and year level if role changes from Student to Prof/Admin
+    if "role" in data and data["role"] != models.RoleEnum.student:
+        user.program = None
+        user.year_level = None
+
     if "password" in data and data["password"]:
         data["password_hash"] = hash_password(data.pop("password"))
     elif "password" in data:
@@ -83,7 +114,7 @@ def update_user(user_id: int, payload: schemas.UserUpdate, db: Session = Depends
 
 @router.get("/courses", response_model=List[schemas.CourseOut])
 def list_courses(db: Session = Depends(get_db), _=Depends(admin_only)):
-    return db.query(models.Course).all()
+    return db.query(models.Course).filter(models.Course.is_deleted == False).all()
 
 @router.post("/courses", response_model=schemas.CourseOut, status_code=201)
 def create_course(payload: schemas.CourseCreate, db: Session = Depends(get_db), _=Depends(admin_only)):
@@ -97,7 +128,7 @@ def create_course(payload: schemas.CourseCreate, db: Session = Depends(get_db), 
 
 @router.put("/courses/{course_id}", response_model=schemas.CourseOut)
 def update_course(course_id: int, payload: schemas.CourseUpdate, db: Session = Depends(get_db), _=Depends(admin_only)):
-    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    course = db.query(models.Course).filter(models.Course.id == course_id, models.Course.is_deleted == False).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     
@@ -111,17 +142,24 @@ def update_course(course_id: int, payload: schemas.CourseUpdate, db: Session = D
 
 @router.delete("/courses/{course_id}", status_code=204)
 def delete_course(course_id: int, db: Session = Depends(get_db), _=Depends(admin_only)):
-    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    course = db.query(models.Course).filter(models.Course.id == course_id, models.Course.is_deleted == False).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
-    db.delete(course)
+
+    # Guard: Dependency Check (Blueprints)
+    is_in_blueprint = db.query(models.CurriculumBlueprint).filter_by(course_id=course_id, is_deleted=False).first()
+    if is_in_blueprint:
+        raise HTTPException(status_code=400, detail="Cannot remove course. It is currently part of an active curriculum blueprint.")
+
+    course.is_deleted = True
+    course.deleted_at = datetime.utcnow()
     db.commit()
 
 # ─── Curriculum Blueprints ────────────────────────────────────────────────────
 
 @router.get("/blueprints", response_model=List[schemas.BlueprintOut])
 def list_blueprints(db: Session = Depends(get_db), _=Depends(admin_only)):
-    return db.query(models.CurriculumBlueprint).all()
+    return db.query(models.CurriculumBlueprint).filter(models.CurriculumBlueprint.is_deleted == False).all()
 
 @router.post("/blueprints", response_model=schemas.BlueprintOut, status_code=201)
 def add_blueprint(payload: schemas.BlueprintCreate, db: Session = Depends(get_db), _=Depends(admin_only)):
@@ -148,14 +186,76 @@ def add_blueprint(payload: schemas.BlueprintCreate, db: Session = Depends(get_db
     db.refresh(bp)
     return bp
 
+@router.post("/blueprints/sync")
+def sync_blueprint_courses(program: str, year_level: int, course_ids: List[int], db: Session = Depends(get_db), _=Depends(admin_only)):
+    # Get current active entries
+    current_entries = db.query(models.CurriculumBlueprint).filter_by(program=program, year_level=year_level, is_deleted=False).all()
+    current_ids = {e.course_id for e in current_entries}
+    target_ids = set(course_ids)
+
+    # 1. Add new courses
+    to_add = target_ids - current_ids
+    for cid in to_add:
+        # Check if course exists
+        if db.query(models.Course).filter_by(id=cid, is_deleted=False).first():
+            db.add(models.CurriculumBlueprint(program=program, year_level=year_level, course_id=cid))
+            # Sync to sections
+            sections = db.query(models.Section).filter_by(program=program, year_level=year_level).all()
+            for sec in sections:
+                if not db.query(models.SectionCourse).filter_by(section_id=sec.id, course_id=cid).first():
+                    db.add(models.SectionCourse(section_id=sec.id, course_id=cid))
+
+    # 2. Remove courses not in target
+    to_remove_ids = current_ids - target_ids
+    if to_remove_ids:
+        # Remove from sections
+        section_ids = [s.id for s in db.query(models.Section).filter_by(program=program, year_level=year_level).all()]
+        if section_ids:
+            db.query(models.SectionCourse).filter(
+                models.SectionCourse.section_id.in_(section_ids),
+                models.SectionCourse.course_id.in_(list(to_remove_ids))
+            ).delete(synchronize_session=False)
+        
+        # Hard delete blueprint entries (as they are just properties of the "Blueprint Group")
+        db.query(models.CurriculumBlueprint).filter(
+            models.CurriculumBlueprint.program == program,
+            models.CurriculumBlueprint.year_level == year_level,
+            models.CurriculumBlueprint.course_id.in_(list(to_remove_ids))
+        ).delete(synchronize_session=False)
+
+    db.commit()
+    return {"message": "Blueprint synchronized"}
+
+@router.put("/blueprints/group")
+def update_blueprint_group(old_program: str, old_year: int, new_program: str, new_year: int, db: Session = Depends(get_db), _=Depends(admin_only)):
+    db.query(models.CurriculumBlueprint).filter_by(program=old_program, year_level=old_year, is_deleted=False).update({
+        "program": new_program, "year_level": new_year
+    }, synchronize_session=False)
+    db.commit()
+    return {"message": "Group updated"}
+
+@router.delete("/blueprints/group")
+def delete_blueprint_group(program: str, year_level: int, db: Session = Depends(get_db), _=Depends(admin_only)):
+    # Guard: Dependency Check (Sections)
+    has_sections = db.query(models.Section).filter_by(program=program, year_level=year_level).first()
+    if has_sections:
+        raise HTTPException(status_code=400, detail=f"Cannot remove curriculum. There are active sections assigned to {program} Year {year_level}.")
+
+    items = db.query(models.CurriculumBlueprint).filter_by(program=program, year_level=year_level, is_deleted=False).all()
+    now = datetime.utcnow()
+    for it in items:
+        it.is_deleted = True
+        it.deleted_at = now
+    db.commit()
+    return {"message": "Group deleted"}
+
 @router.delete("/blueprints/{blueprint_id}", status_code=204)
 def delete_blueprint(blueprint_id: int, db: Session = Depends(get_db), _=Depends(admin_only)):
-    bp = db.query(models.CurriculumBlueprint).filter(models.CurriculumBlueprint.id == blueprint_id).first()
+    bp = db.query(models.CurriculumBlueprint).filter(models.CurriculumBlueprint.id == blueprint_id, models.CurriculumBlueprint.is_deleted == False).first()
     if not bp:
         raise HTTPException(status_code=404, detail="Blueprint not found")
     
     # Sync: Remove this course from all sections of this program/year
-    # We join with Section to filter by program and year_level
     db.query(models.SectionCourse).filter(
         models.SectionCourse.section_id.in_(
             db.query(models.Section.id).filter_by(program=bp.program, year_level=bp.year_level)
@@ -163,15 +263,18 @@ def delete_blueprint(blueprint_id: int, db: Session = Depends(get_db), _=Depends
         models.SectionCourse.course_id == bp.course_id
     ).delete(synchronize_session=False)
 
-    db.delete(bp)
+    bp.is_deleted = True
+    bp.deleted_at = datetime.utcnow()
     db.commit()
 
 # ─── Section Generation ───────────────────────────────────────────────────────
 
 @router.post("/generate-section", response_model=schemas.SectionOut, status_code=201)
 def generate_section(payload: schemas.GenerateSectionRequest, db: Session = Depends(get_db), _=Depends(admin_only)):
-    # Auto-naming logic: BSIT-3A, BSIT-3B...
-    base_name = f"{payload.program}-{payload.year_level}"
+    # Auto-naming logic: BSIT-3A, BSIT-A, etc.
+    year_part = f"-{payload.year_level}" if payload.year_level else ""
+    base_name = f"{payload.program}{year_part}"
+    
     existing_sections = db.query(models.Section).filter(
         models.Section.section_name.like(f"{base_name}%")
     ).order_by(models.Section.section_name.desc()).all()
@@ -180,12 +283,16 @@ def generate_section(payload: schemas.GenerateSectionRequest, db: Session = Depe
     if existing_sections:
         # Get the highest letter used so far
         last_names = [s.section_name for s in existing_sections]
-        # Sort and get the last one
         last_names.sort()
         last_name = last_names[-1]
-        last_char = last_name[-1]
-        if last_char.isalpha():
-            next_letter = chr(ord(last_char) + 1)
+        
+        # Extract the trailing letter
+        # If base_name is "BSCS-2", last_name might be "BSCS-2A"
+        # If base_name is "BSCS", last_name might be "BSCS-A"
+        # We find where base_name ends and take the rest
+        suffix = last_name[len(base_name):]
+        if suffix and suffix[0].isalpha():
+            next_letter = chr(ord(suffix[0]) + 1)
     
     section_name = f"{base_name}{next_letter}"
 
@@ -232,8 +339,12 @@ def delete_section(section_id: int, db: Session = Depends(get_db), _=Depends(adm
     section = db.query(models.Section).filter(models.Section.id == section_id).first()
     if not section:
         raise HTTPException(status_code=404, detail="Section not found")
-    db.delete(section)
-    db.commit()
+    try:
+        db.delete(section)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Cannot delete section. It likely has enrolled students or course assignments. Unenroll students first.")
 
 @router.get("/sections", response_model=List[schemas.SectionOut])
 def list_all_sections(db: Session = Depends(get_db), _=Depends(admin_only)):
@@ -253,3 +364,64 @@ def assign_professor(payload: schemas.AssignProfessorRequest, db: Session = Depe
     sc.professor_id = payload.professor_id
     db.commit()
     return {"message": f"Assigned {prof.name} to section course {sc.id}"}
+
+@router.post("/unenroll/{user_id}", status_code=200)
+def unenroll_student(user_id: int, db: Session = Depends(get_db), _=Depends(admin_only)):
+    enrollment = db.query(models.Enrollment).filter(models.Enrollment.student_id == user_id).first()
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found for this user")
+    db.delete(enrollment)
+    db.commit()
+    return {"message": "Student unenrolled successfully"}
+
+# ─── Recycle Bin ──────────────────────────────────────────────────────────────
+
+@router.get("/trash")
+def get_trash(db: Session = Depends(get_db), _=Depends(admin_only)):
+    users = db.query(models.User).filter_by(is_deleted=True).all()
+    courses = db.query(models.Course).filter_by(is_deleted=True).all()
+    blueprints = db.query(models.CurriculumBlueprint).filter_by(is_deleted=True).options(joinedload(models.CurriculumBlueprint.course)).all()
+    
+    return {
+        "users": users,
+        "courses": courses,
+        "blueprints": blueprints
+    }
+
+@router.post("/restore/{item_type}/{item_id}")
+def restore_item(item_type: str, item_id: int, db: Session = Depends(get_db), _=Depends(admin_only)):
+    model = None
+    if item_type == "user": model = models.User
+    elif item_type == "course": model = models.Course
+    elif item_type == "blueprint": model = models.CurriculumBlueprint
+    
+    if not model: raise HTTPException(status_code=400, detail="Invalid item type")
+    
+    item = db.query(model).filter_by(id=item_id, is_deleted=True).first()
+    if not item: raise HTTPException(status_code=404, detail="Item not found in trash")
+    
+    item.is_deleted = False
+    item.deleted_at = None
+    db.commit()
+    return {"message": "Restored successfully"}
+
+@router.delete("/purge/{item_type}/{item_id}")
+def purge_item(item_type: str, item_id: int, db: Session = Depends(get_db), _=Depends(admin_only)):
+    model = None
+    if item_type == "user": model = models.User
+    elif item_type == "course": model = models.Course
+    elif item_type == "blueprint": model = models.CurriculumBlueprint
+    
+    if not model: raise HTTPException(status_code=400, detail="Invalid item type")
+    
+    item = db.query(model).filter_by(id=item_id, is_deleted=True).first()
+    if not item: raise HTTPException(status_code=404, detail="Item not found in trash")
+    
+    try:
+        db.delete(item)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Cannot permanently delete item. It may have dependencies.")
+    
+    return {"message": "Permanently deleted"}

@@ -50,6 +50,7 @@ window.api = {
 
   getBlueprints: ()  => window.api.get("/api/admin/blueprints"),
   addBlueprint:  (b) => window.api.post("/api/admin/blueprints", b),
+  syncBlueprintCourses: (p, y, ids) => window.api.post(`/api/admin/blueprints/sync?program=${encodeURIComponent(p)}&year_level=${y}`, ids),
   deleteBlueprint: (id) => window.api.delete(`/api/admin/blueprints/${id}`),
 
   getAllSections:   () => window.api.get("/api/admin/sections"),
@@ -57,6 +58,15 @@ window.api = {
   updateSection: (id, s) => window.api.put(`/api/admin/sections/${id}`, s),
   deleteSection: (id) => window.api.delete(`/api/admin/sections/${id}`),
   assignProfessor: (p) => window.api.post("/api/admin/assign-professor", p),
+  unenroll: (id) => window.api.post(`/api/admin/unenroll/${id}`),
+
+  getTrash: () => window.api.get("/api/admin/trash"),
+  restoreItem: (type, id) => window.api.post(`/api/admin/restore/${type}/${id}`),
+  purgeItem: (type, id) => window.api.delete(`/api/admin/purge/${type}/${id}`),
+  updateBlueprintGroup: (old_p, old_y, new_p, new_y) => 
+    window.api.put(`/api/admin/blueprints/group?old_program=${encodeURIComponent(old_p)}&old_year=${old_y}&new_program=${encodeURIComponent(new_p)}&new_year=${new_y}`),
+  deleteBlueprintGroup: (p, y) => 
+    window.api.delete(`/api/admin/blueprints/group?program=${encodeURIComponent(p)}&year_level=${y}`),
 
   // ── Student ───────────────────────────────
   getSections: (program, year) =>

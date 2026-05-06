@@ -46,6 +46,7 @@ class UserOut(BaseModel):
     role: RoleEnum
     program: Optional[str] = None
     year_level: Optional[int] = None
+    enrolled_section: Optional[str] = None # Added for admin dashboard
 
     class Config:
         from_attributes = True
@@ -70,13 +71,13 @@ class CourseUpdate(BaseModel):
 # ─── Blueprints ───────────────────────────────────────────
 class BlueprintCreate(BaseModel):
     program: str
-    year_level: int
+    year_level: Optional[int] = None
     course_id: int
 
 class BlueprintOut(BaseModel):
     id: int
     program: str
-    year_level: int
+    year_level: Optional[int] = None
     course: CourseOut
 
     class Config:
@@ -85,7 +86,7 @@ class BlueprintOut(BaseModel):
 # ─── Section Generation ───────────────────────────────────
 class GenerateSectionRequest(BaseModel):
     program: str
-    year_level: int
+    year_level: Optional[int] = None
     slot_limit: int = 40
 
 class AssignProfessorRequest(BaseModel):
@@ -100,7 +101,7 @@ class SectionCourseOut(BaseModel):
     section_id: int
     section_name: str
     program: str
-    year_level: int
+    year_level: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -109,7 +110,7 @@ class SectionOut(BaseModel):
     id: int
     section_name: str
     program: str
-    year_level: int
+    year_level: Optional[int] = None
     slot_limit: int
     enrolled_count: int = 0
     section_courses: List[SectionCourseOut] = []

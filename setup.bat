@@ -14,17 +14,17 @@ if %errorlevel% neq 0 (
 )
 
 echo [2/4] Creating virtual environment...
-if not exist "venv" (
-    python -m venv venv
-    echo Virtual environment created.
+if not exist "backend\venv" (
+    python -m venv backend\venv
+    echo Virtual environment created in backend\venv.
 ) else (
-    echo Virtual environment already exists. Skipping.
+    echo Virtual environment already exists in backend\venv. Skipping.
 )
 
 echo [3/4] Upgrading pip and installing dependencies...
-call venv\Scripts\activate.bat
+call backend\venv\Scripts\activate.bat
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r backend\requirements.txt
 
 echo [4/4] Setup complete!
 echo.

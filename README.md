@@ -33,20 +33,26 @@ The database will be automatically created and seeded on the first run.
 ## 🛠 Manual Setup (Local Development)
 
 ### 1. Initial Setup
-To set up the project on a new Windows machine, navigate to the `backend` folder and run the setup script. This will create a virtual environment, upgrade pip, and install all dependencies automatically.
+To set up the project on a new Windows machine, run the setup script in the root directory. This will create a virtual environment, upgrade pip, and install all dependencies automatically.
 
 ```bash
-cd backend
 setup.bat
 ```
 
 ### 2. Start the Backend
-Once setup is complete, you can start the FastAPI server using the start script:
+Once setup is complete, you can start the FastAPI server using the start script in the root directory:
 
 ```bash
-cd backend
 start.bat
 ```
+
+---
+
+## 📚 Documentation & Diagrams
+
+For in-depth technical details and system logic, please refer to:
+- **[System Documentation](./DOCUMENTATION.md)**: Features, architecture, and module breakdown.
+- **[System Diagrams](./diagrams.md)**: Context, Architecture, and DFD (Levels 1-3).
 
 > **Note:** The first time you run the backend locally, you may want to seed the database with demo data. After activating your environment, run:
 > `python seed.py`

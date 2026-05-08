@@ -450,21 +450,19 @@ function AdminUsers() {
         </form>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", gap: "1rem", flexWrap: "wrap" }}>
-        <h3 style={{ fontFamily: "var(--font-display)" }}>User Directory</h3>
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flex: 1, justifyContent: "flex-end" }}>
-          <div className="input-group" style={{ width: "250px" }}>
-            <input
-              className="input"
-              placeholder="Search by name or email…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-medium" style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Role Filter:</label>
-            <select className="select" style={{ width: "130px", padding: "0.4rem", fontSize: "0.85rem" }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem", gap: "0.75rem", flexWrap: "wrap" }}>
+        <h3 style={{ fontFamily: "var(--font-display)", flexShrink: 0 }}>User Directory</h3>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end", flex: 1 }}>
+          <input
+            className="input"
+            placeholder="Search by name or email…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem", flex: "1", minWidth: "160px", maxWidth: "280px" }}
+          />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexShrink: 0 }}>
+            <label className="text-xs font-medium" style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Role:</label>
+            <select className="select" style={{ width: "120px", padding: "0.4rem", fontSize: "0.85rem" }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
               <option>All</option><option>Admin</option><option>Student</option><option>Professor</option>
             </select>
           </div>
@@ -472,20 +470,21 @@ function AdminUsers() {
       </div>
 
       {loading ? <div style={{ textAlign: "center", padding: "2rem" }}><span className="spinner" /></div> : (
-        <div className="data-table-wrap" style={{ display: "flex", flexDirection: "column" }}>
+        <div className="data-table-wrap" style={{ display: "flex", flexDirection: "column", overflowX: "auto" }}>
+          <div style={{ minWidth: "720px" }}>
           {/* Standalone Header */}
           <div style={{ background: "#1e293b", borderRadius: "var(--radius-lg) var(--radius-lg) 0 0", borderBottom: "1px solid var(--border-glass)" }}>
             <table className="data-table" style={{ tableLayout: "fixed", marginBottom: 0 }}>
               <thead>
                 <tr>
-                  <th style={{ width: "60px" }}>#</th>
-                  <th>Name</th>
-                  <th style={{ width: "250px" }}>Email</th>
-                  <th style={{ width: "120px" }}>Role</th>
-                  <th style={{ width: "120px" }}>Program</th>
-                  <th style={{ width: "100px" }}>Year</th>
-                  <th style={{ width: "150px" }}>Section</th>
-                  <th style={{ width: "160px" }}>Actions</th>
+                  <th style={{ width: "44px" }}>#</th>
+                  <th style={{ minWidth: "140px" }}>Name</th>
+                  <th style={{ width: "200px" }}>Email</th>
+                  <th style={{ width: "100px" }}>Role</th>
+                  <th style={{ width: "100px" }}>Program</th>
+                  <th style={{ width: "80px" }}>Year</th>
+                  <th style={{ width: "120px" }}>Section</th>
+                  <th style={{ width: "136px" }}>Actions</th>
                 </tr>
               </thead>
             </table>
@@ -497,20 +496,20 @@ function AdminUsers() {
                 {filteredUsers.length === 0 ? <tr><td colSpan="7" style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>No users found</td></tr> :
                   filteredUsers.map((u, i) => (
                     <tr key={u.id}>
-                      <td style={{ width: "60px", color: "var(--text-muted)" }}>{i + 1}</td>
-                      <td style={{ fontWeight: 500 }}>{u.name}</td>
-                      <td style={{ width: "250px", color: "var(--text-secondary)", fontSize: "0.85rem" }}>{u.email}</td>
-                      <td style={{ width: "120px" }}><span className={`badge ${roleBadge[u.role] || "badge-blue"}`}>{u.role}</span></td>
-                      <td style={{ width: "120px", color: "var(--text-secondary)" }}>{u.program || "—"}</td>
-                      <td style={{ width: "100px", color: "var(--text-secondary)" }}>{u.year_level ? `Year ${u.year_level}` : "—"}</td>
-                      <td style={{ width: "150px" }}>
+                      <td style={{ width: "44px", color: "var(--text-muted)" }}>{i + 1}</td>
+                      <td style={{ minWidth: "140px", fontWeight: 500 }}>{u.name}</td>
+                      <td style={{ width: "200px", color: "var(--text-secondary)", fontSize: "0.82rem", wordBreak: "break-all" }}>{u.email}</td>
+                      <td style={{ width: "100px" }}><span className={`badge ${roleBadge[u.role] || "badge-blue"}`}>{u.role}</span></td>
+                      <td style={{ width: "100px", color: "var(--text-secondary)" }}>{u.program || "—"}</td>
+                      <td style={{ width: "80px", color: "var(--text-secondary)" }}>{u.year_level ? `Yr ${u.year_level}` : "—"}</td>
+                      <td style={{ width: "120px" }}>
                         {u.enrolled_section ? (
-                          <span className="badge badge-emerald" style={{ fontSize: "0.75rem" }}>{u.enrolled_section}</span>
+                          <span className="badge badge-emerald" style={{ fontSize: "0.72rem" }}>{u.enrolled_section}</span>
                         ) : (
                           <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>—</span>
                         )}
                       </td>
-                      <td style={{ width: "160px", textAlign: "right" }}>
+                      <td style={{ width: "136px", textAlign: "right" }}>
                         <div className="flex gap-1" style={{ justifyContent: "flex-end" }}>
                           <button className="btn btn-ghost btn-sm" onClick={() => setEditUser(u)}>Edit</button>
                           <button className="btn btn-danger btn-sm" onClick={() => handleRemove(u.id)}>Remove</button>
@@ -520,6 +519,7 @@ function AdminUsers() {
                   ))}
               </tbody>
             </table>
+          </div>
           </div>
         </div>
       )}
@@ -626,16 +626,17 @@ function AdminCourses() {
       </div>
 
       {loading ? <div style={{ textAlign: "center", padding: "2rem" }}><span className="spinner" /></div> : (
-        <div className="data-table-wrap" style={{ display: "flex", flexDirection: "column" }}>
+        <div className="data-table-wrap" style={{ display: "flex", flexDirection: "column", overflowX: "auto" }}>
+          <div style={{ minWidth: "480px" }}>
           {/* Standalone Header */}
           <div style={{ background: "#1e293b", borderRadius: "var(--radius-lg) var(--radius-lg) 0 0", borderBottom: "1px solid var(--border-glass)" }}>
             <table className="data-table" style={{ tableLayout: "fixed", marginBottom: 0 }}>
               <thead>
                 <tr>
-                  <th style={{ width: "60px" }}>#</th>
+                  <th style={{ width: "44px" }}>#</th>
                   <th>Course Name</th>
-                  <th style={{ width: "120px" }}>Code</th>
-                  <th style={{ width: "160px" }}>Actions</th>
+                  <th style={{ width: "100px" }}>Code</th>
+                  <th style={{ width: "140px" }}>Actions</th>
                 </tr>
               </thead>
             </table>
@@ -647,10 +648,10 @@ function AdminCourses() {
                 {filteredCourses.length === 0 ? <tr><td colSpan="4" style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>No courses found</td></tr> :
                   filteredCourses.map((c, i) => (
                     <tr key={c.id}>
-                      <td style={{ width: "60px", color: "var(--text-muted)" }}>{i + 1}</td>
+                      <td style={{ width: "44px", color: "var(--text-muted)" }}>{i + 1}</td>
                       <td style={{ fontWeight: 500 }}>{c.course_name}</td>
-                      <td style={{ width: "120px" }}><span className="badge badge-blue">{c.course_code}</span></td>
-                      <td style={{ width: "160px", textAlign: "right" }}>
+                      <td style={{ width: "100px" }}><span className="badge badge-blue">{c.course_code}</span></td>
+                      <td style={{ width: "140px", textAlign: "right" }}>
                         <div className="flex gap-1" style={{ justifyContent: "flex-end" }}>
                           <button className="btn btn-ghost btn-sm" onClick={() => setEditCourse(c)}>Edit</button>
                           <button className="btn btn-danger btn-sm" onClick={() => handleRemove(c.id)}>Remove</button>
@@ -660,6 +661,7 @@ function AdminCourses() {
                   ))}
               </tbody>
             </table>
+          </div>
           </div>
         </div>
       )}
@@ -896,7 +898,7 @@ function AdminSections() {
           Automatically populates courses from the Curriculum Blueprint and handles automatic naming.
         </p>
         <form onSubmit={handleGenerate} id="generate-section-form" noValidate>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "0.75rem", alignItems: "flex-end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", alignItems: "flex-end" }}>
             <div className="input-group">
               <label className="input-label">Program (from Blueprints)</label>
               <select className="select" value={form.program} onChange={e => setForm({ ...form, program: e.target.value })} required>

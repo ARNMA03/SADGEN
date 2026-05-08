@@ -9,19 +9,20 @@ The **SADGEN Enrollment System** is an automated block enrollment portal designe
 - **Backend:** [FastAPI](https://fastapi.tiangolo.com/) (Python)
 - **Database:** PostgreSQL (Production) / SQLite (Local/Development)
 - **ORM:** [SQLAlchemy](https://www.sqlalchemy.org/)
-- **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3 (No-build React-like component structure)
+- **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3 (No-build Component Architecture)
+- **Visuals:** [Mermaid.js](https://mermaid.js.org/) for architectural diagrams
 - **Containerization:** Docker & Docker Compose
-- **Deployment:** Optimized for Render.com
 
 ---
 
-## 3. System Architecture
-The system follows a decoupled client-server architecture:
-- **Client (Frontend):** A component-based single-page application (SPA) architecture using modular JS components (`Navbar`, `RosterGrid`, `SectionCard`, etc.). It communicates with the backend via a centralized `api.js` client.
-- **Server (Backend):** A RESTful API built with FastAPI, organized into functional routers (`admin`, `auth`, `student`, `professor`).
-- **Database:** Stores user records, courses, curriculum blueprints, sections, and enrollment data.
+## 3. Key System Features (Hardened Logic)
+SADGEN is designed with robust data integrity and "smart" management features that go beyond basic CRUD operations:
 
-*For detailed visual representations, refer to [diagrams.md](./diagrams.md).*
+*   **Smart Section Naming (Gap Scan):** When generating new sections, the system performs an alphabetical "Gap Scan." If sections A, B, and C exist and B is deleted, the next section created will automatically reclaim "B" before incrementing to "D."
+*   **Dependency-Aware Deletion:** Sections can be deleted even if they have course assignments (the system handles the cleanup). However, a hard block is maintained if students are enrolled, preventing accidental data loss.
+*   **Automatic Role Cleanup:** When a user's role is changed (e.g., from Student to Professor), the system automatically clears irrelevant academic data (Program, Year Level) to maintain a clean database.
+*   **Curriculum Synchronization:** If an administrator updates a Curriculum Blueprint (adding/removing courses), the system automatically synchronizes all active block sections using that blueprint in real-time.
+*   **Administrative Recycle Bin (Trash Management):** Soft-deletion logic is implemented for Users, Courses, and Blueprints, allowing administrators to review and restore deleted items before permanent removal.
 
 ---
 
@@ -29,31 +30,30 @@ The system follows a decoupled client-server architecture:
 
 | Role | Description | Key Capabilities |
 | :--- | :--- | :--- |
-| **Admin** | System Overseer | Manage users, create courses/blueprints, generate sections, assign professors. |
-| **Student** | Primary User | View available sections for their program/year, enroll in blocks, view study load. |
-| **Professor** | Academic Staff | View assigned teaching sections and student rosters for those sections. |
+| **Admin** | System Overseer | Manage users/recycle bin, create courses/blueprints, generate sections, assign professors. |
+| **Student** | Primary User | View eligible sections, enroll in blocks, view study load receipt. |
+| **Professor** | Academic Staff | Read-only access to assigned teaching sections and student rosters. |
 
 ---
 
 ## 5. Core Modules
 
 ### 5.1 Authentication (`auth.py`)
-- Provides JWT (JSON Web Token) based authentication.
-- Secure login and token verification for all protected routes.
+- Provides **Stateless JWT** (JSON Web Tokens) based authentication.
+- Secure login and identity verification without session storage on the server.
+- Role-based access control (RBAC) enforced on all API endpoints.
 
 ### 5.2 Admin Module (`routers/admin.py`)
-- **User Management:** Create and list users with specific roles.
-- **Curriculum Management:** Define "Blueprints" (sets of courses for a specific program/year).
-- **Section Generation:** Create sections based on blueprints and assign physical constraints (professor, term, capacity).
+- **User Management:** Detailed user tracking with automatic role-identity cleanup and trash recovery.
+- **Blueprint Management:** Defines "Blueprints" (course sets for specific program/year) with live-sync capabilities.
+- **Section Generation:** Automated "Block" creation with smart naming and capacity guards.
 
 ### 5.3 Student Module (`routers/student.py`)
-- **Section Discovery:** Automatically filters sections based on the student's program and year level.
-- **Enrollment Engine:** Handles the logic of joining a section and creating an enrollment record.
-- **Study Load:** Provides a summary of the courses within the enrolled section.
+- **Section Discovery:** Real-time filtering ensures students only see sections matching their Program and Year Level.
+- **Enrollment Engine:** Validates slot availability and eligibility tokens before committing a record.
 
 ### 5.4 Professor Module (`routers/professor.py`)
-- **Schedule Management:** Lists all sections where the professor is assigned.
-- **Roster Access:** Provides student names and IDs for each assigned class.
+- **Roster Access:** Provides secure access to student names and contact info for their specific assigned sections.
 
 ---
 
@@ -61,37 +61,35 @@ The system follows a decoupled client-server architecture:
 
 ### Local Development (Windows)
 1. **Prerequisites:** Python 3.10+ installed.
-2. **Setup:** Run `setup.bat` in the root folder. This creates the virtual environment and installs dependencies.
-3. **Run:** Run `start.bat` in the root folder. This starts the FastAPI server and opens the browser to the API documentation.
+2. **Setup:** Run `setup.bat` in the root folder.
+3. **Run:** Run `start.bat` in the root folder.
 4. **Seed Data:** To populate the system with demo data, run:
    ```bash
    cd backend
    python seed.py
    ```
 
-### Docker Deployment
-1. Ensure Docker Desktop is running.
-2. Execute the following command in the root directory:
-   ```bash
-   docker-compose up --build
-   ```
-
 ---
 
 ## 7. Database Schema Overview
-Key entities in the system include:
-- **User:** Stores credentials, role, program, and year level.
-- **Course:** Defines individual subjects (Code, Title, Units).
-- **CurriculumBlueprint:** Maps courses to specific Programs and Year Levels.
-- **Section:** A specific instance of a blueprint with an assigned Professor and Term.
-- **Enrollment:** The join entity connecting a Student to a Section.
+- **User:** Credentials, Role, Academic Metadata.
+- **Course:** Subject Metadata (Code, Title).
+- **CurriculumBlueprint:** Mapping Course groups to Program/Year identities.
+- **Section:** Physical instance of a blueprint with a Professor and Term.
+- **Enrollment:** Secure join connecting Students to their specific Sections.
 
 ---
 
-## 8. API Endpoints
-Comprehensive API documentation is available at `http://localhost:8000/docs` (Swagger UI) or `http://localhost:8000/redoc` (ReDoc) when the server is running.
+## 8. Presentation Guide
+When presenting SADGEN, focus on these five **"Hardening"** talking points:
+
+1.  **Integrity:** Demonstrate how updating/deleting a blueprint live-updates all active sections using it.
+2.  **Usability:** Show the **Smart Naming** logic by deleting Section 'B' and creating a new one to reclaim the gap.
+3.  **Safety:** Show the guardrail preventing the deletion of a section if students are already enrolled.
+4.  **Recovery:** Demonstrate the **Trash Management / Recycle Bin** by deleting a user and then restoring them.
+5.  **Cleanliness:** Show the **Role Cleanup** logic by changing a Student to a Professor and verifying their year level is purged.
 
 ---
 
-*Documentation Version: 1.0.0*  
+*Documentation Version: 1.2.0*  
 *Last Updated: May 7, 2026*

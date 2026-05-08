@@ -13,7 +13,7 @@ function AuthProvider({ children }) {
 
   useEffect(() => {
     const stored = sessionStorage.getItem("sadgen_user");
-    const token  = sessionStorage.getItem("sadgen_token");
+    const token = sessionStorage.getItem("sadgen_token");
     if (stored && token) {
       window.api.setToken(token);
       setUser(JSON.parse(stored));
@@ -26,10 +26,10 @@ function AuthProvider({ children }) {
     window.api.setToken(data.access_token);
     sessionStorage.setItem("sadgen_token", data.access_token);
     const profile = {
-      user_id:    data.user_id,
-      name:       data.name,
-      role:       data.role,
-      program:    data.program,
+      user_id: data.user_id,
+      name: data.name,
+      role: data.role,
+      program: data.program,
       year_level: data.year_level,
     };
     sessionStorage.setItem("sadgen_user", JSON.stringify(profile));
@@ -44,7 +44,13 @@ function AuthProvider({ children }) {
     sessionStorage.removeItem("sadgen_admin_tab");
     sessionStorage.removeItem("sadgen_prof_view");
     setUser(null);
+
+    window.logout = logout;
   };
+
+  useEffect(() => {
+    window.logout = logout;
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, loading }}>
